@@ -14,8 +14,12 @@ antora:
       label: "Tabs"
 
 tabs:
-  - name: ">_ terminal"
+  - name: ">_ host1"
     url: /wetty
+  - name: ">_ host2"
+    url: /wetty2
+  - name: "Developer logs"
+    url: /logs/
   - name: "Asciidoc Doc"
     url: https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/
     external: true

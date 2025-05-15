@@ -12,3 +12,14 @@ virtualmachines:
     networks:
       - default
       - secondary
+  - name: "host2"
+    image: "rhel-9.5"
+    memory: "2G"
+    cores: 1
+    image_size: "40G"
+    tags:
+      - key: "AnsibleGroup"
+        value: "bastions"
+    networks:
+      - default
+      - secondary

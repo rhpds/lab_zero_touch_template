@@ -1,4 +1,3 @@
 ---
 # Default network exists by default, specify here always.
 - name: default
-- name: secondary

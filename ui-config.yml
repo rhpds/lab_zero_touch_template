@@ -16,6 +16,3 @@ antora:
 tabs:
   - name: ">_ terminal"
     url: /wetty_host1/ssh/root
-  - name: "Asciidoc Doc"
-    url: https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/
-    external: true

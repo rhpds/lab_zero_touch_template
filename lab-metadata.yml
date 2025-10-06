@@ -16,7 +16,6 @@ lab:
       - "{{ concept_1 }}"
       - "{{ concept_2 }}"
       - "{{ concept_3 }}"
-      - "{{ concept_4 }}"
     use_case: "{{ lab_use_case }}"
   
   # Git references for deployment
@@ -52,36 +51,22 @@ lab:
 # lab:
 #   name: "Red Hat OpenShift Networking Basics"
 #   shortname: "zt-networking-basics"
-#   description: "Learn the fundamentals of networking in Red Hat OpenShift"
-#   version: "1.0.0"
 #   category: "networking"
 #   tags: "openshift,networking,basics"
 #   
-#   repository:
-#     url: "https://github.com/rhdps/zt-networking-basics.git"
-#     branch: "main"
-#     production_branch: "v1.0.0"
+#   description:
+#     summary: "Learn the fundamentals of networking in Red Hat OpenShift"
+#     goal: "Understand OpenShift networking concepts and configuration"
+#     concepts:
+#       - "OpenShift Services"
+#       - "Routes and Ingress"
+#       - "Network Policies"
+#     use_case: "Configure secure networking for containerized applications"
 #   
-#   structure:
-#     modules: "networking-basics,openshift-networking"
-#     tabs: "overview,exercises,resources"
-#   
-#   configuration:
-#     instances: "1"
-#     networks: "default"
-#     firewall: "enabled"
-#   
-#   automation:
-#     setup: "setup-networking.sh"
-#     runtime: "runtime-networking.sh"
+#   git_ref:
+#     production: "prod"
+#     development: "dev"
 #   
 #   production:
 #     enabled: "true"
-#     version: "1.0.0"
-#     last_updated: "2025-01-27"
 #     maintainer: "Red Hat Learning Team"
-#   
-#   development:
-#     status: "active"
-#     last_commit: "2025-01-27T10:00:00Z"
-#     contributors: "team@redhat.com"

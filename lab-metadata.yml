@@ -1,0 +1,87 @@
+# lab-metadata.yml
+# Single Point of Truth for Lab Information
+
+lab:
+  # Core lab information
+  name: "{{ lab_name }}"
+  shortname: "{{ lab_shortname }}"
+  category: "{{ lab_category }}"
+  tags: "{{ lab_tags }}"
+  
+  # Detailed description for description.adoc generation
+  description:
+    summary: "{{ lab_summary }}"
+    goal: "{{ lab_goal }}"
+    concepts:
+      - "{{ concept_1 }}"
+      - "{{ concept_2 }}"
+      - "{{ concept_3 }}"
+      - "{{ concept_4 }}"
+    use_case: "{{ lab_use_case }}"
+  
+  # Git references for deployment
+  git_ref:
+    production: "prod"
+    development: "dev"
+  
+  # Production settings
+  production:
+    enabled: "{{ production_enabled }}"
+    maintainer: "{{ maintainer }}"
+
+# DYNAMIC EXTRACTION SOURCES:
+# ===========================
+# lab.version: git describe --tags --abbrev=0
+# repository.url: https://github.com/rhdps/{shortname}.git
+# repository.branch: git branch --show-current
+# configuration.instances[]: config/instances.yaml (per-instance extraction)
+# configuration.networks: config/networks.yaml
+# configuration.firewall: config/firewall.yaml
+# 
+# PER-INSTANCE EXTRACTION:
+# configuration.instances[].services: From each instance definition
+# configuration.instances[].routes: From each instance definition
+# 
+# GENERATED FILES:
+# description.adoc: Generated from lab.description (goal, concepts, use_case)
+# README.md: Generated from configuration extraction (instances, networks, firewall)
+# dev.yaml: Generated using git_ref.development
+# prod.yaml: Generated using git_ref.production
+
+# Example usage:
+# lab:
+#   name: "Red Hat OpenShift Networking Basics"
+#   shortname: "zt-networking-basics"
+#   description: "Learn the fundamentals of networking in Red Hat OpenShift"
+#   version: "1.0.0"
+#   category: "networking"
+#   tags: "openshift,networking,basics"
+#   
+#   repository:
+#     url: "https://github.com/rhdps/zt-networking-basics.git"
+#     branch: "main"
+#     production_branch: "v1.0.0"
+#   
+#   structure:
+#     modules: "networking-basics,openshift-networking"
+#     tabs: "overview,exercises,resources"
+#   
+#   configuration:
+#     instances: "1"
+#     networks: "default"
+#     firewall: "enabled"
+#   
+#   automation:
+#     setup: "setup-networking.sh"
+#     runtime: "runtime-networking.sh"
+#   
+#   production:
+#     enabled: "true"
+#     version: "1.0.0"
+#     last_updated: "2025-01-27"
+#     maintainer: "Red Hat Learning Team"
+#   
+#   development:
+#     status: "active"
+#     last_commit: "2025-01-27T10:00:00Z"
+#     contributors: "team@redhat.com"

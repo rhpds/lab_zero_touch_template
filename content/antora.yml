@@ -1,4 +1,17 @@
 ---
-
 name: modules
-version: master
+title: "Lab Zero Touch Template"
+version: latest
+
+asciidoc:
+  attributes:
+    # Deploy-time variables — injected automatically by the platform at container
+    # start by merging user_data.yml into this file. The values below are stubs
+    # for LOCAL PREVIEW only so that local Antora builds do not warn on unresolved
+    # attributes. In a deployed lab, the platform overwrites these with real values.
+    guid: "GUID"
+    domain: "example.com"
+    bastion_public_hostname: "bastion.GUID.example.com"
+    common_password: "changeme"
+    # Add your own static attributes here:
+    # lab_name: "My Lab"

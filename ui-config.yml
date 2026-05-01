@@ -1,21 +1,30 @@
 ---
 
 antora:
-  name: modules
-  dir: www
+  name: modules        # Must match 'name:' in content/antora.yml
+  dir: www             # Subdirectory within the HTTP root where Antora built HTML lives
+                       # (matches site.yml output.dir: ./www/www relative to ./www/)
   modules:
-    - name: module-01
-      label: "Writing your lab"
-      solveButton: true
+    - name: module-01  # Filename in content/modules/ROOT/pages/ without .adoc
+      label: "Overview"
     - name: module-02
-      label: "Antora"
-      solveButton: true
+      label: "Lab Infrastructure"
     - name: module-03
-      label: "Tabs"
+      label: "Setup Automation"
+    - name: module-04
+      label: "Configuring the UI"
+    - name: module-05
+      label: "Runtime Automation"
+      solveButton: true  # Show a Solve button — validation-host1.sh blocks if task incomplete
+    - name: module-06
+      label: "Writing Content"
+    - name: module-07
+      label: "Deploying your Lab"
 
 tabs:
   - name: ">_ terminal"
-    url: /wetty
+    type: "terminal"   # Auto-connects to bastion SSH via wetty.
+                       # Available types: terminal, double-terminal
   - name: "Asciidoc Doc"
     url: https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/
-    external: true
+    external: true     # Opens in a new browser tab

@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+# Check for updates to nookbag (SPA) and nookbag-bundle (Antora theme).
+# Requires: curl
+#
+# Usage:
+#   utilities/lab-check-updates
+#
+# Exit codes:
+#   0 — all packages are up to date
+#   1 — one or more updates are available
+
+set -euo pipefail
+
+# Must be run from the repository root
+if [ ! -f "utilities/lab-build" ] || [ ! -f "site.yml" ]; then
+    echo "Error: run this script from the repository root."
+    echo "  Example: utilities/lab-check-updates"
+    exit 2
+fi
+
+NOOKBAG_RELEASES_API="https://api.github.com/repos/rhpds/nookbag/releases"
+BUNDLE_RELEASES_API="https://api.github.com/repos/rhpds/nookbag-bundle/releases/latest"
+
+# ── Read pinned versions from source files ──────────────────────────────────
+
+CURRENT_NOOKBAG=$(grep -o 'nookbag-v[0-9]*\.[0-9]*\.[0-9]*' utilities/lab-build | head -1)
+CURRENT_BUNDLE=$(grep -o 'download/v[0-9]*\.[0-9]*\.[0-9]*/ui-bundle' site.yml \
+    | grep -o 'v[0-9]*\.[0-9]*\.[0-9]*')
+CURRENT_NOOKBAG_CACHE_KEY=$(grep 'key: nookbag-' .github/workflows/deploy-pages.yml \
+    | grep -o 'nookbag-v[0-9]*\.[0-9]*\.[0-9]*' | head -1 || echo "not found")
+CURRENT_BUNDLE_CACHE_KEY=$(grep 'key: antora-bundle-' .github/workflows/deploy-pages.yml \
+    | grep -o 'v[0-9]*\.[0-9]*\.[0-9]*' | head -1 || echo "not found")
+
+echo "Pinned versions:"
+printf "  %-22s %s\n" "nookbag SPA:"    "$CURRENT_NOOKBAG  (utilities/lab-build)"
+printf "  %-22s %s\n" "nookbag-bundle:" "$CURRENT_BUNDLE  (site.yml)"
+echo ""
+echo "Checking GitHub for latest releases..."
+
+# ── Fetch latest releases from GitHub ───────────────────────────────────────
+
+# nookbag: filter out sidecar, beta, and alpha releases to get the latest stable SPA
+LATEST_NOOKBAG=$(curl -sf "$NOOKBAG_RELEASES_API" \
+    | grep '"tag_name"' \
+    | grep '"nookbag-v' \
+    | grep -v 'sidecar\|beta\|alpha' \
+    | head -1 \
+    | grep -o 'nookbag-v[0-9]*\.[0-9]*\.[0-9]*')
+
+# nookbag-bundle: single release line (only stable releases exist)
+LATEST_BUNDLE=$(curl -sf "$BUNDLE_RELEASES_API" \
+    | grep '"tag_name"' \
+    | grep -o 'v[0-9]*\.[0-9]*\.[0-9]*')
+
+echo "Latest releases on GitHub:"
+printf "  %-22s %s\n" "nookbag SPA:"    "$LATEST_NOOKBAG"
+printf "  %-22s %s\n" "nookbag-bundle:" "$LATEST_BUNDLE"
+echo ""
+
+# ── Compare and report ───────────────────────────────────────────────────────
+
+UPDATES=0
+
+if [ "$CURRENT_NOOKBAG" = "$LATEST_NOOKBAG" ]; then
+    printf "  ✓  nookbag SPA    %s — up to date\n" "$CURRENT_NOOKBAG"
+else
+    printf "  ✗  nookbag SPA    %s → %s — UPDATE AVAILABLE\n" \
+        "$CURRENT_NOOKBAG" "$LATEST_NOOKBAG"
+    echo "     Files to update:"
+    echo "       utilities/lab-build               — wget URL"
+    echo "       .github/workflows/deploy-pages.yml — cache key: $CURRENT_NOOKBAG_CACHE_KEY → $LATEST_NOOKBAG"
+    echo "     After updating, delete /tmp/nookbag.zip to force re-download."
+    UPDATES=$((UPDATES + 1))
+fi
+
+if [ "$CURRENT_BUNDLE" = "$LATEST_BUNDLE" ]; then
+    printf "  ✓  nookbag-bundle %s — up to date\n" "$CURRENT_BUNDLE"
+else
+    printf "  ✗  nookbag-bundle %s → %s — UPDATE AVAILABLE\n" \
+        "$CURRENT_BUNDLE" "$LATEST_BUNDLE"
+    echo "     Files to update:"
+    echo "       site.yml                          — ui.bundle.url version"
+    echo "       .github/workflows/deploy-pages.yml — cache key: $CURRENT_BUNDLE_CACHE_KEY → antora-bundle-$LATEST_BUNDLE"
+    echo "     After updating, delete .cache/ to force Antora to re-fetch the bundle."
+    UPDATES=$((UPDATES + 1))
+fi
+
+echo ""
+if [ "$UPDATES" -gt 0 ]; then
+    echo "$UPDATES update(s) available."
+    exit 1
+else
+    echo "All packages are up to date."
+fi

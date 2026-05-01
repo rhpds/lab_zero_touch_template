@@ -1,26 +1,43 @@
 ---
 site:
   title: "Change me, your title lives as site.title in site.yml"
+  # TODO: Set to your repo URL (e.g. https://github.com/your-org/your-lab)
   url: https://github.com/rhpds/showroom_template_zero
   start_page: modules::module-01.adoc
 
 asciidoc:
   attributes:
     lab_name: "I'm the lab_name var"
-    release-version: master
     page-pagination: true
     my_var: "foo - this is an asciidoc attribute from `site.yml`"
+    # Deploy-time variables are injected into content/antora.yml by the platform
+    # at container start (user_data.yml is merged into antora.yml automatically).
+    # The stubs below are for LOCAL PREVIEW only — in a deployed lab these values
+    # come from the platform. Add them to content/antora.yml for local build support.
+    # guid: "GUID"
+    # domain: "example.com"
+    # bastion_public_hostname: "bastion.GUID.example.com"
+    # common_password: "changeme"
 
 content:
   sources:
     - url: ./
       start_path: content
+
 ui:
   bundle:
+    # nookbag-bundle provides the Antora theme/UI for zerotouch labs.
+    # At deploy time this is overridden by ocp4_workload_showroom_antora_ui_bundle_url.
+    # snapshot: false allows Antora to cache the bundle in .cache/antora after first download.
+    # Delete .cache/ to force a re-fetch (e.g. after a version bump here).
     url: https://github.com/rhpds/nookbag-bundle/releases/download/v0.0.3/ui-bundle.zip
-    snapshot: true
+    snapshot: false
 
 output:
+  # Antora builds into ./www/www/ so that ui-config.yml's 'antora.dir: www'
+  # correctly points nookbag at the built HTML from the HTTP root (./www/).
+  # The lab-build script extracts nookbag into ./www/ and copies ui-config.yml
+  # there — resulting in: www/{index.html, ui-config.yml, www/<antora HTML>}
   dir: ./www/www
 
 runtime:

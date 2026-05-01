@@ -1,14 +1,54 @@
 ---
+# containers: defines in-pod containers that run INSIDE the showroom pod
+# (not VMs). Used for custom tooling like code-server, custom terminals, etc.
+# Leave empty if you only need VMs.
 containers: []
+
 virtualmachines:
   - name: "host1"
+    # image: maps to a PVC name in the cnv-images namespace (platform-managed).
+    # Run 'oc get pvc -n cnv-images' to see available images.
     image: "rhel-9.5"
-    memory: "2G"
+    # memory: Kubernetes resource quantity — use Gi (binary gibibytes) for RAM.
+    memory: "2Gi"
     cores: 1
-    image_size: "40G"
+    # image_size: minimum disk size; must use Kubernetes quantity suffix 'Gi'.
+    image_size: "40Gi"
     tags:
       - key: "AnsibleGroup"
+        # AnsibleGroup controls what AgnosticD configures on this VM:
+        #   bastions — full config: Satellite registration, common packages,
+        #              SSH user setup, NodePort SSH service (accessible from lab UI)
+        #   nodes    — same as bastions but no NodePort SSH service
+        #   isolated — NO AgnosticD config at all; you handle all setup yourself
+        #              via setup-automation scripts or cloud-init (userdata:)
         value: "bastions"
     networks:
       - default
-      - secondary
+      # Add 'secondary' here (and uncomment in networks.yaml) to attach a
+      # second NIC. Secondary networks have NO DHCP — configure a static IP
+      # via userdata: (cloud-init) or a setup-automation script.
+      # - secondary
+
+    # packages: (non-isolated VMs only) DNF packages to install at provisioning
+    # time. AgnosticD's set-repositories role registers the VM to Satellite first,
+    # so packages are available when this runs.
+    # packages:
+    #   - name: nc
+    #   - name: git
+
+    # register_satellite: false  # Uncomment to skip Satellite registration for
+    #                             # this VM (e.g. it has its own subscription).
+
+  # To create multiple identical VMs, use count: and INSTANCEGUID substitution:
+  # - name: "node-INSTANCEGUID"   # INSTANCEGUID is replaced with a unique suffix
+  #   image: "rhel-9.5"
+  #   memory: "2Gi"
+  #   cores: 1
+  #   image_size: "40Gi"
+  #   count: 3                    # Creates node-1, node-2, node-3
+  #   tags:
+  #     - key: "AnsibleGroup"
+  #       value: "nodes"
+  #   networks:
+  #     - default

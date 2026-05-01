@@ -1,29 +1,108 @@
-= Tabs
+= Setup Automation
 
-[source,yaml]
+`setup-automation/` contains scripts that run *once at provisioning time*, before the student ever enters the lab.
+Use these to install software, write configuration files, or prepare any VM state that your lab requires.
+
+== Where setup-automation fits
+
+[source]
 ----
-tabs:
-  - name: ">_ terminal"
-    type: "terminal"
-  - name: "Asciidoc Doc"
-    url: https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/
-    external: true
+AgnosticD provisions VMs
+  → Satellite registration + packages: (bastions/nodes only)
+  → firewall.yaml applied
+  → setup-automation/ runs   ← YOU ARE HERE
+  → student enters the lab
 ----
 
-=== Explanation
+For `bastions` and `nodes` VMs, AgnosticD has already completed Satellite registration and package installation
+before your scripts run.
+Do *not* re-register the VM to Satellite here — Satellite registration is already complete.
 
-- `name`: The label that appears on the tab in the UI.
-- `type`: Defines the tab layout. Options include:
-  - `terminal`: For a single terminal-like block.
-  - `double-terminal`: For a side-by-side terminal view.
-- `url`: Used to link to an external page.
-- `path`: (If no url is defined) The base path where the service will be served, e.g., `/tty`.
-- `port`: (If no url is defined) The port where the service will be served, e.g., `3000`.
-- `external`: If `true`, the link opens in a new tab/window.
+== Script naming convention
 
-== Resulting UI
+The platform looks for a script named `setup-<vmname>.sh` in the `setup-automation/` directory,
+where `<vmname>` matches the VM's `name:` in `instances.yaml`.
 
-You might see two tabs in your UI:
-- A terminal emulator style display
-- A link to AsciiDoc syntax reference
+[source,shell]
+----
+setup-automation/
+├── main.yml                # Platform entry point — do not modify
+├── ansible.cfg
+└── setup-host1.sh          # Runs on the VM named "host1"
+----
 
+If no matching script exists for a VM, nothing runs — no error.
+
+== Injected environment variables
+
+The platform injects these variables as environment variables when your script runs:
+
+[cols="1,3"]
+|===
+| Variable | Description
+
+| `BASTION_HOST`
+| SSH hostname for this VM
+
+| `BASTION_PORT`
+| SSH NodePort (a high port, not 22)
+
+| `BASTION_USER`
+| SSH login user (typically `rhel`)
+
+| `BASTION_PASSWORD`
+| SSH password (same value as `common_password`)
+
+| `GUID`
+| Unique lab GUID for this deployment (same as `{guid}` in `.adoc` pages)
+
+| `common_password`
+| Lab user password
+|===
+
+== Live example
+
+The template includes a working `setup-host1.sh`:
+
+[source,bash]
+----
+#!/bin/bash
+# setup-host1.sh — provisioning-time setup script for the 'host1' VM.
+#
+# Runs AFTER AgnosticD has provisioned the VM:
+#   - Satellite is already registered
+#   - Common packages are already installed
+#   - SSH user and sudo are already configured
+# DNF is ready — use it freely.
+
+USER=rhel
+
+echo "Adding $USER to wheel group" > /root/post-run.log
+usermod -aG wheel "$USER"
+
+# Example: install additional packages
+# dnf install -y nc git jq
+
+echo "Setup of host1 complete" >> /root/post-run.log
+chmod 666 /root/post-run.log
+----
+
+Script output is written to `/tmp/setup-scripts/setup-<vmname>.log` on the VM, and to `/tmp/<vmname>-setup-script.out` on the Ansible runner for inspection.
+
+== Adding a script for a new VM
+
+If your `instances.yaml` defines a VM named `database`, create:
+
+[source,bash]
+----
+setup-automation/setup-database.sh
+----
+
+The platform automatically discovers and runs it during provisioning.
+
+[TIP]
+====
+After writing your setup scripts, test them with the *Developer Experience CI*
+on https://catalog.demo.redhat.com — the same mechanism used in xref:module-02.adoc[Lab Infrastructure].
+Enable *Save provision if failed* so you can SSH in to debug if the script errors.
+====

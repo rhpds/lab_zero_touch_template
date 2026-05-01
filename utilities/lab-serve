@@ -2,14 +2,14 @@
 #
 
 echo "Starting server process..."
-# TODO: Add case statement to allow stopping, starting, and restarting
-# TODO: Add logic to detect both podman and docker, if both are installed, use podman as default "first found"
-# TODO: Move to RHEL image
-
 # Check if podman exists, otherwise use docker
 CONTAINER_CMD="docker"
 if command -v podman &> /dev/null; then
     CONTAINER_CMD="podman"
 fi
-$CONTAINER_CMD run -d --rm --name showroom-httpd -p 8443:80 -v "./www:/usr/local/apache2/htdocs/" docker.io/httpd:2.4
-echo "Serving lab content on http://localhost:8443/index.html"
+# UBI9 httpd-24: non-root, no Docker Hub rate limits, Red Hat supported.
+# Serves on internal port 8080 mapped to localhost:8080.
+$CONTAINER_CMD run -d --rm --name showroom-httpd -p 8080:8080 \
+    -v "./www:/var/www/html/:z" \
+    registry.access.redhat.com/ubi9/httpd-24
+echo "Serving lab content on http://localhost:8080/index.html"

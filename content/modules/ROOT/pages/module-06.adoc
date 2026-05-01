@@ -1,0 +1,139 @@
+= Writing Content
+
+Lab content is written in AsciiDoc — a lightweight markup language that Antora builds into HTML.
+Each page corresponds to one file in `content/modules/ROOT/pages/`.
+
+== Variables
+
+=== Static variables (defined in `site.yml`)
+
+Static attributes are defined under `asciidoc.attributes` in `site.yml` and are available on every page.
+
+[source,yaml]
+----
+# site.yml
+asciidoc:
+  attributes:
+    lab_name: "My Lab Name"
+    my_var: "some value"
+----
+
+Reference them in `.adoc` pages with `+{attribute-name}+`.
+For example: `{lab_name}` renders as: {lab_name}
+
+=== Deploy-time variables (injected automatically)
+
+When the lab is deployed, the platform merges `user_data.yml` into `content/antora.yml` at container start.
+These variables are then available on every page automatically:
+
+[cols="1,2,1"]
+|===
+| Variable | Description | Example value
+
+| `+{guid}+`
+| Unique lab GUID for this deployment
+| `abc12`
+
+| `+{domain}+`
+| Lab domain name
+| `sandboxNNN.opentlc.com`
+
+| `+{bastion_public_hostname}+`
+| Full SSH hostname for the bastion VM
+| `bastion.abc12.sandboxNNN.opentlc.com`
+
+| `+{common_password}+`
+| Lab user password
+| `r3dh4t1!`
+|===
+
+The stub values in `content/antora.yml` provide fallback values for local preview so builds do not warn on unresolved attributes.
+At deploy time the platform overwrites them with real values.
+
+.Source (what you write in `.adoc`):
+[source,asciidoc,subs="specialcharacters"]
+....
+SSH to your bastion:
+
+[source,bash]
+----
+ssh rhel@{bastion_public_hostname}
+----
+
+Password: `{common_password}`
+....
+
+.Result (what students see in a deployed lab — platform substitutes real values):
+====
+SSH to your bastion:
+
+[source,bash]
+----
+ssh rhel@bastion.abc12.sandboxNNN.opentlc.com
+----
+
+Password: `r3dh4t1!`
+====
+
+== Admonitions
+
+AsciiDoc admonitions draw attention to important information.
+They render with a distinct icon and colored border in the nookbag UI.
+
+[source,asciidoc]
+----
+[NOTE]
+====
+This is a note. Use for supplementary information the student may find helpful.
+====
+
+[TIP]
+====
+This is a tip. Use for shortcuts or best practices.
+====
+
+[IMPORTANT]
+====
+This is important. Use for information the student must not overlook.
+====
+
+[WARNING]
+====
+This is a warning. Use for actions that could cause data loss or breakage.
+====
+----
+
+They render as:
+
+[NOTE]
+====
+This is a note. Use for supplementary information the student may find helpful.
+====
+
+[TIP]
+====
+This is a tip. Use for shortcuts or best practices.
+====
+
+[IMPORTANT]
+====
+This is important. Use for information the student must not overlook.
+====
+
+[WARNING]
+====
+This is a warning. Use for actions that could cause data loss or breakage.
+====
+
+== Inserting images
+
+Place image files in `content/modules/ROOT/assets/images/` and reference them with the `image::` macro:
+
+[source,asciidoc]
+----
+image::example-image.png[Alt text, width=400]
+----
+
+This renders as:
+
+image::example-image.png[Example Image, width=400]

@@ -1,0 +1,122 @@
+= Configuring the UI
+
+`ui-config.yml` controls the student-facing lab UI: the ordered list of modules the student progresses through,
+and the tabs (terminal, external links) visible alongside the content.
+
+== Full reference
+
+[source,yaml]
+----
+antora:
+  name: modules          # Must match 'name:' in content/antora.yml — see warning below
+  dir: www               # Subdirectory where Antora built its HTML (matches site.yml output.dir)
+  modules:
+    - name: module-01    # Filename in content/modules/ROOT/pages/ without .adoc
+      label: "Introduction"
+    - name: module-02
+      label: "Hands-on Lab"
+      solveButton: true  # Optional — shows a Solve button on this module
+    - name: module-03
+      label: "Summary"
+
+tabs:
+  - name: ">_ terminal"
+    type: "terminal"     # Auto-connects to the bastion VM via SSH
+                         # Also available: double-terminal (side-by-side panes)
+  - name: "Reference Docs"
+    url: https://example.com
+    external: true       # Opens in a new browser tab instead of an iframe
+----
+
+[WARNING]
+====
+`antora.name` in `ui-config.yml` must exactly match `name:` in `content/antora.yml`.
+The default value in both files is `modules`.
+If you change one, change the other.
+This mismatch is the most common reason the lab UI shows a blank content panel.
+====
+
+== `antora:` fields
+
+[cols="1,3"]
+|===
+| Field | Description
+
+| `name`
+| The Antora component name. Must match `name:` in `content/antora.yml`.
+
+| `dir`
+| The subdirectory under the HTTP root where Antora built its HTML.
+  For local preview: `www/` inside `./www/`. Do not change this value.
+
+| `modules[].name`
+| Filename of the page in `content/modules/ROOT/pages/` without the `.adoc` extension.
+
+| `modules[].label`
+| Human-readable label shown in the module navigation bar.
+
+| `modules[].solveButton`
+| Optional. When `true`, a *Solve* button appears on the module.
+  Clicking it runs `solve-<vmname>.sh` from `runtime-automation/module-NN/`.
+|===
+
+== `tabs:` fields
+
+[cols="1,3"]
+|===
+| Field | Description
+
+| `name`
+| The label shown on the tab.
+
+| `type`
+| Built-in tab type. `terminal` auto-connects to the bastion SSH via wetty.
+  `double-terminal` shows two side-by-side terminal panes.
+
+| `url`
+| A URL to show in an embedded iframe, or open externally if `external: true`.
+
+| `external`
+| When `true`, the URL opens in a new browser tab instead of an iframe.
+|===
+
+[NOTE]
+====
+Use `name:` for the tab display label. The `label:` field appears in `antora.modules[]` entries (for module navigation labels) and is distinct from the tab `name:`.
+====
+
+== Adding a new module
+
+Follow these four steps to extend the template with an additional module:
+
+. *Create the page file*
++
+[source,bash]
+----
+# Example: adding module-08
+touch content/modules/ROOT/pages/module-08.adoc
+----
+
+. *Add the entry to `ui-config.yml`*
++
+[source,yaml]
+----
+    - name: module-08
+      label: "My New Module"
+----
+
+. *Optionally create a runtime-automation directory*
++
+[source,bash]
+----
+mkdir -p runtime-automation/module-08
+# Add setup-host1.sh, solve-host1.sh, validation-host1.sh as needed
+----
+
+. *Update `site.yml` `start_page:` if this new module is your entry point*
++
+[source,yaml]
+----
+# site.yml
+start_page: modules::module-08.adoc
+----

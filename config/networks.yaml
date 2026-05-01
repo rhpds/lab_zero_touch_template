@@ -1,4 +1,23 @@
 ---
-# Default network exists by default, specify here always.
+# config/networks.yaml — defines NetworkAttachmentDefinitions (NADs) for this lab.
+#
+# Each entry creates a NAD in the lab namespace using OVN-Kubernetes localnet.
+# The 'default' entry is required — always include it.
+#
+# NAMING: entries are GUID-prefixed at deploy time, e.g. an entry named
+# 'secondary' becomes 'secondary-<guid>' in the cluster. Reference the bare
+# name (without the GUID) in instances.yaml under networks:.
+#
+# SECONDARY NETWORKS:
+#   - VMs on a secondary network get an additional NIC via Multus.
+#   - There is NO DHCP on secondary networks — you must configure a static IP
+#     via cloud-init (userdata: in instances.yaml) or a setup-automation script.
+#   - NetworkPolicy (firewall.yaml) does NOT apply to secondary network traffic;
+#     VMs on secondary networks can communicate freely without additional rules.
+#
+# To use a secondary network:
+#   1. Uncomment the entry below
+#   2. Add 'secondary' to the VM's networks: list in instances.yaml
+
 - name: default
-- name: secondary
+# - name: secondary

@@ -1,39 +1,152 @@
-= Writing your lab
+= Overview
 
-== Variables
+This template is the starting point for all RHDP zerotouch labs.
+It provides the directory structure, configuration files, and example scripts the platform expects.
+Work through these modules in order to build and deploy your own lab.
 
-The `lab_name` var, known as an asciidoc attribute, is set in `site.yml` and can be used to set the lab_name (Example: {lab_name}) or title of your content.
-They are both free to change its value and if you prefer to use a different var name, you can change the value of `lab_name`, for example to `title` in `site.yml` and then reference it in your content as `\{site-title}` (Ex: {site-title}).
+== First things to change after forking
 
-Example:
-[source,asciidoc]
+Before writing any content, update these four values so the lab is yours:
+
+[cols="1,2,2"]
+|===
+| File | Field | What to set
+
+| `site.yml`
+| `title:`
+| Your lab's display title
+
+| `site.yml`
+| `url:`
+| Your GitHub repo URL (e.g. `https://github.com/your-org/your-lab`)
+
+| `site.yml`
+| `start_page:`
+| `modules::module-01.adoc` — update if you rename your first page
+
+| `content/antora.yml`
+| `title:`
+| Your lab title (shown in Antora navigation)
+|===
+
+[IMPORTANT]
+====
+`content/antora.yml` has a `name:` field (default: `modules`).
+This value must exactly match `antora.name` in `ui-config.yml`.
+Do not change `name:` in `antora.yml` unless you change both files together.
+====
+
+== Directory structure
+
+[source,shell]
 ----
-{my_var}
+.
+├── site.yml                    # Antora playbook — title, url, start_page, attributes
+├── ui-config.yml               # Module list and tab definitions for the lab UI
+├── config/
+│   ├── instances.yaml          # VM definitions (image, memory, AnsibleGroup)
+│   ├── networks.yaml           # Network attachment definitions (NADs)
+│   └── firewall.yaml           # NetworkPolicy rules (additive to platform defaults)
+├── content/
+│   ├── antora.yml              # Antora component descriptor (name: must match ui-config.yml)
+│   └── modules/ROOT/
+│       ├── assets/images/      # Images referenced in your .adoc pages
+│       └── pages/              # Your lab instruction pages (one .adoc per module)
+├── setup-automation/
+│   ├── main.yml                # Ansible playbook — runs once at provisioning time
+│   ├── setup-host1.sh          # Provisioning script for the host1 VM
+│   └── ansible.cfg
+├── runtime-automation/
+│   ├── main.yml                # Ansible playbook — runs on each student action
+│   ├── module-NN/              # One directory per module (setup/solve/validation scripts)
+│   └── ansible.cfg
+└── utilities/
+    ├── lab-build               # Build Antora site + extract nookbag UI into ./www/
+    ├── lab-serve               # Start local HTTP server on http://localhost:8080
+    ├── lab-clean               # Remove ./www/* (clears previous build)
+    ├── lab-stop                # Stop the local HTTP server container
+    └── lab-check-updates       # Check nookbag SPA and nookbag-bundle for newer releases
 ----
 
-Variable rendered:
+== Local preview
 
-{my_var}
+=== Prerequisites
 
-== Inserting Images
+[cols="1,3"]
+|===
+| Requirement | Notes
 
-To display an image in your Antora documentation, place the image file in the `assets/images/` folder of the module, then reference it using the `image::[]` macro
+| `podman` or `docker`
+| `podman` is preferred and detected automatically. Pre-installed on RHEL/Fedora. On macOS, install https://podman-desktop.io[Podman Desktop] or Docker Desktop.
 
-=== Basic Syntax
+| `wget`
+| Downloads the nookbag UI on first run. Pre-installed on RHEL/Fedora. On macOS: `brew install wget`.
 
-[source,asciidoc]
+| `unzip`
+| Extracts the nookbag UI zip. Pre-installed on most systems.
+
+| Port 8080 free
+| `lab-serve` binds to `localhost:8080`.
+
+| `curl`
+| Required by `lab-check-updates`. Pre-installed on all platforms.
+
+| linux/amd64 emulation
+| The Antora container runs as `--platform linux/amd64`. On Apple Silicon Macs, enable Rosetta in Docker Desktop settings or run `podman machine init --arch amd64`.
+|===
+
+=== Running the preview
+
+[source,bash]
 ----
-image::example-image.png[Example Image, width=100, height=100]
+# Build the Antora site and extract the nookbag UI shell
+utilities/lab-build
+
+# Start the local HTTP server
+utilities/lab-serve
+
+# Browse to http://localhost:8080/index.html
 ----
 
-This will render the `example-image.png` image as it follows:
+The iterative cycle is: edit a file → run `utilities/lab-build` → refresh the browser.
 
-image::example-image.png[Example Image, width=100, height=100]
+[source,bash]
+----
+# Stop the server when done
+utilities/lab-stop
 
-=== Understanding the Antora Configuration
+# Remove the build output to start clean
+utilities/lab-clean
+----
 
-This lab explains the purpose and structure of the YAML configuration used in an Antora-based documentation site.
+[NOTE]
+====
+`lab-build` caches the nookbag UI zip at `/tmp/nookbag.zip`.
+If you see UI issues after an upgrade, delete `/tmp/nookbag.zip` and run `lab-build` again.
+====
 
-=== Basic Structure
+=== Alternative: GitHub Pages
 
-The configuration is written in YAML `ui-config.yml` and includes two main sections: `antora` and `tabs`. Click next to know more.
+The repo includes `.github/workflows/deploy-pages.yml`.
+It runs `utilities/lab-build` on every push to `main` and deploys to GitHub Pages —
+useful for sharing a live preview URL with collaborators without any local setup.
+
+To enable: go to your repo → *Settings* → *Pages* → set *Source* to *GitHub Actions*, then push to `main`.
+
+== Development testing with a live cluster
+
+At any point — especially after defining your infrastructure — you can test against
+a real OpenShift cluster using the *Developer Experience* catalog item.
+
+See xref:module-02.adoc[Lab Infrastructure — Testing your infrastructure] for the full procedure.
+
+== Development workflow
+
+The modules in this template follow the natural build order for a new lab:
+
+. *Lab Infrastructure* — define your VMs, networks, and firewall rules
+. *Setup Automation* — write provisioning-time scripts for your VMs
+. *Configuring the UI* — define the module list and terminal tabs
+. *Runtime Automation* — write per-module solve and validation scripts
+. *Writing Content* — write the `.adoc` student-facing instructions
+. *Deploying your Lab* — publish to the platform via AgnosticV

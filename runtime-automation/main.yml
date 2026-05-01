@@ -1,4 +1,18 @@
 ---
+# Variables injected by the platform for each runtime event:
+#   module_dir    — directory name matching the active module (e.g. 'module-01')
+#   module_stage  — event type: 'setup' (enter module / Next), 'solve' (Solve button),
+#                   or 'validation' (Next button validation)
+#   ansible_host  — VM hostname (matches the VM name in instances.yaml)
+#   GUID          — Lab GUID (same value as {guid} in .adoc pages)
+#   common_password — Lab user password
+#
+# Script naming convention: {{ module_stage }}-{{ ansible_host }}.sh
+#   e.g. when a user clicks Next in module-01 on host1:
+#        module_dir=module-01, module_stage=setup, ansible_host=host1
+#        → runs: runtime-automation/module-01/setup-host1.sh
+#
+# If no matching script exists for a VM/stage combination, nothing runs (no error).
 - name: Create inventory
   hosts: localhost
   gather_facts: false
@@ -32,7 +46,7 @@
 
   - name: Check if /module_dir/module_stage-host.sh exists
     ansible.builtin.stat:
-      path: "./{{ module_dir }}/{{ module_stage }}-{{ config_host }}.sh"
+      path: "./{{ module_dir }}/{{ module_stage }}-{{ ansible_host }}.sh"
     delegate_to: localhost
     register: r_script_test
 
@@ -66,6 +80,8 @@
       var: r_result
     when: r_script_test.stat.exists and job_info_dir is defined
 
+  # validation- scripts: a non-zero exit code blocks the user from advancing
+  # to the next module. Use this to verify lab completion criteria.
   - name: Fail if stage was failed
     ansible.builtin.fail:
       msg: "Stage failed"

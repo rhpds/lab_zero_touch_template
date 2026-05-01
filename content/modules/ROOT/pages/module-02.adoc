@@ -1,28 +1,200 @@
-= Antora
+= Lab Infrastructure
 
-The `antora` key in `ui-config.yml` defines how the documentation site is built using Antora.
+The `config/` directory defines the infrastructure for your lab — what VMs exist, what networks they connect to, and what network traffic is allowed.
+Define this first. Everything else (scripts, content) is written to match it.
+
+== `instances.yaml` — Virtual machines
+
+`instances.yaml` declares the VMs the platform will create using OpenShift Virtualization (CNV).
+
+=== Key fields
 
 [source,yaml]
 ----
-antora:
-  name: modules
-  dir: www
-  modules:
-    - name: module-01 
-      label: "Writing your lab"
-    - name: module-02
-      label: "Antora"
-    - name: module-03
-      label: "Tabs"
+virtualmachines:
+  - name: "host1"
+    image: "rhel-9.5"       # PVC name in the cnv-images namespace
+    memory: "2Gi"            # RAM — must use Gi (gibibytes), not G
+    cores: 1
+    image_size: "40Gi"       # Minimum disk size — must use Gi, not G
+    tags:
+      - key: "AnsibleGroup"
+        value: "bastions"    # Controls what AgnosticD configures (see below)
+    networks:
+      - default
 ----
 
-=== Explanation
+[WARNING]
+====
+Use `Gi` (gibibytes), not `G`, for `memory:` and `image_size:`.
+The value `2G` is invalid as a Kubernetes resource quantity and will cause provisioning to fail.
+====
 
-- `name`: The name of the documentation folder, here called `modules`.
-- `dir`: The directory where the documentation files will be located (`www`). 
-- `modules`: The list of modules that make up your lab.
+To see which images are available on the cluster:
 
-Each module has:
+[source,bash]
+----
+oc get pvc -n cnv-images
+----
 
-- `name`: The file name within the `pages` directory.
-- `label`: A human-readable label for display in navigation.
+=== AnsibleGroup — what AgnosticD configures
+
+The `AnsibleGroup` tag controls which AgnosticD roles run on each VM:
+
+[cols="1,3"]
+|===
+| Value | What AgnosticD does
+
+| `bastions`
+| Full configuration: Satellite registration, common packages, SSH user setup, NodePort SSH service.
+The terminal tab in the lab UI connects to this VM automatically.
+
+| `nodes`
+| Same as `bastions` but no NodePort SSH service (not accessible from the lab UI terminal).
+Use for backend VMs that are only reachable VM-to-VM.
+
+| `isolated`
+| No AgnosticD configuration at all.
+You own all setup via `setup-automation/` scripts or `userdata:` (cloud-init).
+Use when you need full control or a non-RHEL image.
+|===
+
+=== `packages:` — additional DNF packages
+
+For `bastions` and `nodes` VMs, AgnosticD registers to Satellite automatically before installing these packages.
+List any additional packages to install at provisioning time:
+
+[source,yaml]
+----
+    packages:
+      - name: nc
+      - name: git
+      - name: jq
+----
+
+=== Multiple identical VMs with `count:` and `INSTANCEGUID`
+
+To create several VMs of the same type, use `count:` and the `INSTANCEGUID` placeholder.
+The platform replaces `INSTANCEGUID` with a unique numeric suffix for each VM:
+
+[source,yaml]
+----
+  - name: "node-INSTANCEGUID"   # Becomes node-1, node-2, node-3
+    image: "rhel-9.5"
+    memory: "2Gi"
+    cores: 1
+    image_size: "40Gi"
+    count: 3
+    tags:
+      - key: "AnsibleGroup"
+        value: "nodes"
+    networks:
+      - default
+----
+
+=== `containers:` — in-pod containers
+
+`containers:` defines containers that run inside the showroom pod itself (not as VMs).
+Used for custom tooling such as `code-server` or custom terminal images.
+For typical labs that only use VMs, leave it empty:
+
+[source,yaml]
+----
+containers: []
+----
+
+---
+
+== `networks.yaml` — Network attachments
+
+`networks.yaml` defines NetworkAttachmentDefinitions (NADs) for the lab namespace.
+
+[source,yaml]
+----
+- name: default
+# - name: secondary
+----
+
+- The `default` entry is *required* — always include it.
+- Each entry creates a NAD in the lab namespace using OVN-Kubernetes localnet.
+- Names are *GUID-prefixed* at deploy time (e.g. `secondary` becomes `secondary-abc12` in the cluster).
+  Reference the bare name (without GUID) everywhere in `instances.yaml`.
+
+=== Secondary networks
+
+To give VMs a second NIC via Multus:
+
+. Uncomment `- name: secondary` in `networks.yaml`
+. Add `- secondary` to the VM's `networks:` list in `instances.yaml`
+
+[NOTE]
+====
+Secondary networks have *no DHCP*.
+You must configure a static IP via `userdata:` (cloud-init) in `instances.yaml`
+or via a `setup-automation/` script after provisioning.
+NetworkPolicy rules in `firewall.yaml` do *not* apply to secondary network traffic.
+====
+
+---
+
+== `firewall.yaml` — NetworkPolicy rules
+
+`firewall.yaml` defines Kubernetes NetworkPolicy rules for the lab namespace.
+
+[source,yaml]
+----
+egress:
+  - ports:
+      - protocol: TCP
+        port: 443
+----
+
+Rules here are *additive* — they extend the platform defaults, not replace them.
+
+=== Platform defaults (always present)
+
+[cols="1,3"]
+|===
+| Direction | Rule
+
+| Ingress
+| TCP 80, 443, 8080, 7171, 8081, 9000 from anywhere; TCP 22 from the showroom pod
+
+| Egress
+| UDP/TCP 5353 (DNS); TCP 22 to other VMs in the namespace; TCP 7171, 8081, 9000 to anywhere
+|===
+
+[IMPORTANT]
+====
+*TCP 443 egress is not in the platform defaults.*
+Without it, your `setup-automation/` scripts cannot reach Red Hat CDN, Satellite, or any external HTTPS endpoint.
+The example above is the minimum rule needed for almost any lab.
+
+The firewall is applied *after* AgnosticD provisioning (so `packages:` and Satellite registration
+are unaffected) but *before* your `setup-automation/` scripts run.
+====
+
+---
+
+== Testing your infrastructure
+
+Once `config/` is defined, test against a live cluster before writing any scripts — it's the fastest way to catch provisioning errors before you have content invested in the lab.
+
+. Go to https://catalog.demo.redhat.com and sign in with SSO
+. Click *Catalog*, search for *Developer Experience*
+. Select *Developer Experience - RHEL BU* or *Developer Experience - Ansible BU*
+. Click the item marked *Development* (red oval)
+. Click the blue *Order* button
+. Fill in a purpose
+. Paste your git repo URL into the repo field
+. Paste your branch name into the branch field
+. Enable the *Save provision if failed* toggle
+. Click *Order*
+
+[TIP]
+====
+Always enable *Save provision if failed* during development.
+It preserves the environment so you can SSH in and debug if provisioning fails.
+You can re-use this same mechanism after writing setup scripts and runtime scripts
+to test each layer before moving on.
+====

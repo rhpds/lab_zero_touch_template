@@ -1,0 +1,64 @@
+---
+# Builds the lab with Antora + nookbag and deploys to GitHub Pages.
+#
+# To enable:
+#   1. Go to your repo → Settings → Pages
+#   2. Under "Build and deployment", set Source to "GitHub Actions"
+#   3. Push to main — this workflow will run automatically
+#
+# The deployed URL will be: https://<org>.github.io/<repo>/
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:    # Allow manual trigger from the Actions tab
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache nookbag UI
+        uses: actions/cache@v4
+        with:
+          path: /tmp/nookbag.zip
+          key: nookbag-v0.3.6
+
+      - name: Cache Antora UI bundle
+        uses: actions/cache@v4
+        with:
+          path: .cache
+          key: antora-bundle-v0.0.3
+
+      - name: Build lab site
+        run: bash utilities/lab-build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./www
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

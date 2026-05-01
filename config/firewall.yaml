@@ -1,6 +1,31 @@
 ---
-# By default egress traffic is not allowed, define below the ports allowed.
+# config/firewall.yaml — controls the Kubernetes NetworkPolicy for this lab namespace.
+#
+# HOW IT WORKS:
+#   This file is fetched from your GitHub repo at provisioning time via an
+#   ansible.builtin.url lookup. Rules here are ADDITIVE to the platform defaults
+#   — they do not replace them. The NetworkPolicy is applied at the END of
+#   AgnosticD provisioning (after set-repositories and packages: have already
+#   run), but BEFORE your setup-automation scripts execute.
+#
+# PLATFORM DEFAULTS (always present — you do not need to repeat these):
+#   Ingress:  TCP 80, 443, 8080, 7171, 8081, 9000 from anywhere (internet)
+#             TCP 22 from the showroom pod only (SSH to lab terminal)
+#   Egress:   UDP/TCP 5353 to openshift-dns (DNS resolution)
+#             TCP 22 to other VMs in the namespace (VM-to-VM SSH)
+#             TCP 7171, 8081, 9000 to anywhere (IronRDP / token server)
+#
+# IMPORTANT: TCP 443 egress is NOT in the defaults. Without it, setup-automation
+# scripts cannot reach Red Hat CDN, Satellite, or any external HTTPS endpoint.
+# The rule below is the minimum needed for almost any lab that touches the internet.
+
 egress:
   - ports:
       - protocol: TCP
         port: 443
+
+# To add ingress rules (e.g. custom web UI ports):
+# ingress:
+#   - ports:
+#       - port: 8080
+#         protocol: TCP

@@ -1,10 +1,10 @@
 = Overview
 
 This template is the starting point for all RHDP zerotouch labs.
-It provides the directory structure, configuration files, and example scripts the platform expects.
+It provides the directory structure, configuration files, and example scripts that the platform expects.
 Work through these modules in order to build and deploy your own lab.
 
-== First things to change after forking
+== First things to change in your new repository
 
 Before writing any content, update these four values so the lab is yours:
 
@@ -57,7 +57,7 @@ Do not change `name:` in `antora.yml` unless you change both files together.
 │   ├── setup-host1.sh          # Provisioning script for the host1 VM
 │   └── ansible.cfg
 ├── runtime-automation/
-│   ├── main.yml                # Ansible playbook — runs on each student action
+│   ├── main.yml                # Ansible playbook — runs on each UI action
 │   ├── module-NN/              # One directory per module (setup/solve/validation scripts)
 │   └── ansible.cfg
 └── utilities/
@@ -91,7 +91,7 @@ Do not change `name:` in `antora.yml` unless you change both files together.
 | `curl`
 | Required by `lab-check-updates`. Pre-installed on all platforms.
 
-| linux/amd64 emulation
+| Linux/amd64 emulation
 | The Antora container runs as `--platform linux/amd64`. On Apple Silicon Macs, enable Rosetta in Docker Desktop settings or run `podman machine init --arch amd64`.
 |===
 
@@ -135,18 +135,17 @@ To enable: go to your repo → *Settings* → *Pages* → set *Source* to *GitHu
 
 == Development testing with a live cluster
 
-At any point — especially after defining your infrastructure — you can test against
-a real OpenShift cluster using the *Developer Experience* catalog item.
+You can test against a live cluster at any time, particularly after defining your infrastructure, using the *Developer Experience* catalog item.
 
-See xref:module-02.adoc[Lab Infrastructure — Testing your infrastructure] for the full procedure.
+See xref:module-02.adoc[Test your infrastructure on a live cluster] for the full procedure.
 
 == Development workflow
 
 The modules in this template follow the natural build order for a new lab:
 
-. *Lab Infrastructure* — define your VMs, networks, and firewall rules
-. *Setup Automation* — write provisioning-time scripts for your VMs
-. *Configuring the UI* — define the module list and terminal tabs
-. *Runtime Automation* — write per-module solve and validation scripts
-. *Writing Content* — write the `.adoc` student-facing instructions
-. *Deploying your Lab* — publish to the platform via AgnosticV
+. Define your VMs, networks, and firewall rules (`config/`)
+. Write provisioning scripts (`setup-automation/`)
+. Define your modules and tabs (`ui-config.yml`)
+. Write solve and validation scripts (`runtime-automation/`)
+. Write instruction pages (`content/`)
+. Tag a release and publish via AgnosticV

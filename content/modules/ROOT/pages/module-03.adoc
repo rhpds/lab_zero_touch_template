@@ -1,6 +1,6 @@
-= Setup Automation
+= Setup automation
 
-`setup-automation/` contains scripts that run *once at provisioning time*, before the student ever enters the lab.
+`setup-automation/` contains scripts that run *once at provisioning time*, before anyone opens the lab environment.
 Use these to install software, write configuration files, or prepare any VM state that your lab requires.
 
 == Where setup-automation fits
@@ -11,7 +11,7 @@ AgnosticD provisions VMs
   → Satellite registration + packages: (bastions/nodes only)
   → firewall.yaml applied
   → setup-automation/ runs   ← YOU ARE HERE
-  → student enters the lab
+  → someone opens the lab
 ----
 
 For `bastions` and `nodes` VMs, AgnosticD has already completed Satellite registration and package installation
@@ -48,7 +48,7 @@ The platform injects these variables as environment variables when your script r
 | SSH NodePort (a high port, not 22)
 
 | `BASTION_USER`
-| SSH login user (typically `rhel`)
+| SSH user name (typically `rhel`)
 
 | `BASTION_PASSWORD`
 | SSH password (same value as `common_password`)
@@ -103,6 +103,6 @@ The platform automatically discovers and runs it during provisioning.
 [TIP]
 ====
 After writing your setup scripts, test them with the *Developer Experience CI*
-on https://catalog.demo.redhat.com — the same mechanism used in xref:module-02.adoc[Lab Infrastructure].
+on https://catalog.demo.redhat.com — the same mechanism described in xref:module-02.adoc[Test your infrastructure on a live cluster].
 Enable *Save provision if failed* so you can SSH in to debug if the script errors.
 ====

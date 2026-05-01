@@ -1,6 +1,6 @@
-= Writing Content
+= Writing content
 
-Lab content is written in AsciiDoc — a lightweight markup language that Antora builds into HTML.
+Lab content is written in AsciiDoc, a lightweight markup language that Antora builds into HTML.
 Each page corresponds to one file in `content/modules/ROOT/pages/`.
 
 == Variables
@@ -47,7 +47,7 @@ These variables are then available on every page automatically:
 | `r3dh4t1!`
 |===
 
-The stub values in `content/antora.yml` provide fallback values for local preview so builds do not warn on unresolved attributes.
+The stub values in `content/antora.yml` provide fallback values for local preview, so that builds do not warn about unresolved attributes.
 At deploy time the platform overwrites them with real values.
 
 .Source (what you write in `.adoc`):
@@ -63,7 +63,7 @@ ssh rhel@{bastion_public_hostname}
 Password: `{common_password}`
 ....
 
-.Result (what students see in a deployed lab — platform substitutes real values):
+.Result (what a deployed lab shows after the platform substitutes real values):
 ====
 SSH to your bastion:
 
@@ -84,7 +84,7 @@ They render with a distinct icon and colored border in the nookbag UI.
 ----
 [NOTE]
 ====
-This is a note. Use for supplementary information the student may find helpful.
+This is a note. Use for supplementary information readers may find helpful.
 ====
 
 [TIP]
@@ -94,7 +94,7 @@ This is a tip. Use for shortcuts or best practices.
 
 [IMPORTANT]
 ====
-This is important. Use for information the student must not overlook.
+This is important. Use for information readers must not overlook.
 ====
 
 [WARNING]
@@ -107,7 +107,7 @@ They render as:
 
 [NOTE]
 ====
-This is a note. Use for supplementary information the student may find helpful.
+This is a note. Use for supplementary information readers may find helpful.
 ====
 
 [TIP]
@@ -117,7 +117,7 @@ This is a tip. Use for shortcuts or best practices.
 
 [IMPORTANT]
 ====
-This is important. Use for information the student must not overlook.
+This is important. Use for information readers must not overlook.
 ====
 
 [WARNING]

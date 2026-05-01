@@ -1,7 +1,6 @@
 = Configuring the UI
 
-`ui-config.yml` controls the student-facing lab UI: the ordered list of modules the student progresses through,
-and the tabs (terminal, external links) visible alongside the content.
+`ui-config.yml` controls the lab UI: the ordered module list, and the tabs (terminal, external links) shown next to the content.
 
 == Full reference
 
@@ -14,7 +13,7 @@ antora:
     - name: module-01    # Filename in content/modules/ROOT/pages/ without .adoc
       label: "Introduction"
     - name: module-02
-      label: "Hands-on Lab"
+      label: "Hands-on lab"
       solveButton: true  # Optional — shows a Solve button on this module
     - name: module-03
       label: "Summary"
@@ -110,7 +109,7 @@ touch content/modules/ROOT/pages/module-08.adoc
 [source,bash]
 ----
 mkdir -p runtime-automation/module-08
-# Add setup-host1.sh, solve-host1.sh, validation-host1.sh as needed
+# Add setup-host1.sh, solve-host1.sh, and validation-host1.sh as needed
 ----
 
 . *Update `site.yml` `start_page:` if this new module is your entry point*

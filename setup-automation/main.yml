@@ -2,7 +2,7 @@
 # Env vars injected by the zerotouch platform at setup-automation run time:
 #   BASTION_HOST      — SSH hostname of the bastion VM
 #   BASTION_PORT      — SSH NodePort (not 22; platform assigns a high port)
-#   BASTION_USER      — SSH login user (typically 'rhel')
+#   BASTION_USER      — SSH user name (typically 'rhel')
 #   BASTION_PASSWORD  — SSH password (derived from common_password)
 #   GUID              — Lab GUID (unique identifier for this deployment)
 #   common_password   — Lab user password

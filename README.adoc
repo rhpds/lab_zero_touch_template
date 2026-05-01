@@ -18,7 +18,7 @@ The template itself is a working lab — open it in a deployed environment to wa
 
 == First things to change
 
-After forking, update these four values before writing any content:
+After you create your repository from this template, update these four values before writing any content:
 
 [cols="1,2,2"]
 |===
@@ -41,9 +41,12 @@ After forking, update these four values before writing any content:
 | Your lab title (shown in Antora navigation)
 |===
 
-IMPORTANT: `content/antora.yml` has a `name:` field (default: `modules`).
+[IMPORTANT]
+====
+`content/antora.yml` has a `name:` field (default: `modules`).
 This value must exactly match `antora.name` in `ui-config.yml`.
 Do not change `name:` in one file without changing the other.
+====
 
 == Directory structure
 
@@ -62,18 +65,18 @@ Do not change `name:` in one file without changing the other.
 │       ├── assets/images/      # Images referenced in your .adoc pages
 │       └── pages/              # Lab instruction pages (one .adoc per module)
 │           ├── module-01.adoc  # Overview
-│           ├── module-02.adoc  # Lab Infrastructure
-│           ├── module-03.adoc  # Setup Automation
+│           ├── module-02.adoc  # Lab infrastructure
+│           ├── module-03.adoc  # Setup automation
 │           ├── module-04.adoc  # Configuring the UI
-│           ├── module-05.adoc  # Runtime Automation (live demo)
-│           ├── module-06.adoc  # Writing Content
-│           └── module-07.adoc  # Deploying your Lab
+│           ├── module-05.adoc  # Runtime automation (live demo)
+│           ├── module-06.adoc  # Writing content
+│           └── module-07.adoc  # Deploying your lab
 ├── setup-automation/
 │   ├── main.yml                # Ansible playbook — runs once at provisioning time
 │   ├── setup-host1.sh          # Provisioning script for the host1 VM
 │   └── ansible.cfg
 ├── runtime-automation/
-│   ├── main.yml                # Ansible playbook — runs on each student action
+│   ├── main.yml                # Ansible playbook — runs on each UI action
 │   ├── module-NN/              # One directory per module (setup/solve/validation scripts)
 │   └── ansible.cfg
 └── utilities/
@@ -107,7 +110,7 @@ Do not change `name:` in one file without changing the other.
 | `curl`
 | Required by `lab-check-updates` to query the GitHub releases API. Pre-installed on all platforms.
 
-| linux/amd64 emulation
+| Linux/amd64 emulation
 | `lab-build` runs the Antora container with `--platform linux/amd64`. On Apple Silicon Macs, enable Rosetta in Docker Desktop settings, or run `podman machine init --arch amd64`.
 |===
 
@@ -155,31 +158,31 @@ The in-lab modules follow the recommended build order for a new lab:
 
 | 01
 | Overview
-| Key files, first things to customize, local preview, development workflow
+| Key files, first things to customize, local preview, and development workflow
 
 | 02
-| Lab Infrastructure
+| Lab infrastructure
 | `instances.yaml`, `networks.yaml`, `firewall.yaml` — and how to test with the Developer Experience CI
 
 | 03
-| Setup Automation
-| Provisioning-time scripts: naming convention, injected env vars, lifecycle position
+| Setup automation
+| Provisioning-time scripts: naming convention, injected environment variables, and lifecycle position
 
 | 04
 | Configuring the UI
-| `ui-config.yml` — module list, tabs, how to add a new module
+| `ui-config.yml` — module list, tabs, and how to add a new module
 
 | 05
-| Runtime Automation
+| Runtime automation
 | Setup/solve/validation stages — includes a live demo with real validation blocking
 
 | 06
-| Writing Content
-| AsciiDoc variables (static + deploy-time), admonitions, images
+| Writing content
+| AsciiDoc variables (static + deploy-time), admonitions, and images
 
 | 07
-| Deploying your Lab
-| AgnosticV `common.yaml`, self-service merge access, dev vs production git refs
+| Deploying your lab
+| AgnosticV `common.yaml`, self-service merge access, and Git references for development versus production
 |===
 
 == Development workflow
@@ -191,7 +194,7 @@ The recommended order for building a new lab:
 . Write provisioning scripts in `setup-automation/`
 . Define your module list and tabs in `ui-config.yml`
 . Write runtime scripts in `runtime-automation/`
-. Write student-facing `.adoc` content in `content/modules/ROOT/pages/`
+. Write instruction pages (`.adoc` files in `content/modules/ROOT/pages/`)
 . Tag a release and add a `common.yaml` to the appropriate AgnosticV repo to deploy
 
 == Deploying to the platform
@@ -209,5 +212,5 @@ __meta__:
       ocp4_workload_showroom_content_git_repo_ref: main   # branch for dev; tag for production
 ----
 
-BU developers have self-service merge access — no reviewer approval required.
-See module-07 in the lab for the full procedure including the pre-deployment checklist.
+BU (business unit) developers have self-service merge access, so you can merge your own pull request without approval from another team.
+See module-07 in the lab for the full procedure, including the pre-deployment checklist.

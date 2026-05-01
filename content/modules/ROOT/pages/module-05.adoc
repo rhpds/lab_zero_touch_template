@@ -1,35 +1,35 @@
-= Runtime Automation
+= Runtime automation
 
-`runtime-automation/` contains scripts that run during the lab *as the student progresses*.
-Unlike setup-automation (which runs once at provisioning), these scripts run on every student action.
+`runtime-automation/` contains scripts that run during the lab *as you move through the modules*.
+Unlike `setup-automation/` (which runs once at provisioning), these scripts run on each UI action you take.
 
 This module is a *live demo* — the terminal tab is connected to your lab VM.
 Complete the task below, then click *Next* to see validation in action.
 
 == The three stages
 
-Each student action triggers a specific stage:
+Each UI action maps to a stage:
 
 [cols="1,2,2"]
 |===
 | Stage | When it runs | Script name
 
 | `setup`
-| When the student *enters a module* or clicks *Next* (after validation passes)
+| When you *enter a module* or click *Next* (after validation passes)
 | `setup-<vmname>.sh`
 
 | `validation`
-| When the student clicks *Next* — runs before advancing
+| When you click *Next* — runs before advancing
 | `validation-<vmname>.sh`
 
 | `solve`
-| When the student clicks the *Solve* button (if `solveButton: true`)
+| When you click the *Solve* button (if `solveButton: true`)
 | `solve-<vmname>.sh`
 |===
 
 [IMPORTANT]
 ====
-A `validation-<vmname>.sh` that exits with a *non-zero exit code* blocks the student from advancing.
+A `validation-<vmname>.sh` that exits with a *non-zero exit code* blocks you from advancing.
 Use this to verify that the lab task has actually been completed.
 ====
 
@@ -43,9 +43,9 @@ runtime-automation/
 ├── main.yml                            # Platform entry point — do not modify
 ├── inventory                           # Platform-managed — do not modify
 ├── module-01/
-│   ├── setup-host1.sh                  # Runs when student enters module-01
-│   ├── solve-host1.sh                  # Runs when student clicks Solve
-│   └── validation-host1.sh            # Runs when student clicks Next
+│   ├── setup-host1.sh                  # Runs when you enter module-01
+│   ├── solve-host1.sh                  # Runs when you click Solve
+│   └── validation-host1.sh            # Runs when you click Next
 ├── module-05/
 │   ├── setup-host1.sh                  # This module's demo scripts
 │   ├── solve-host1.sh
@@ -89,7 +89,7 @@ Here are all three scripts:
 [source,bash]
 ----
 #!/bin/sh
-# Runs when student enters module-05. Resets state so the demo is repeatable.
+# Runs when you enter module-05. Resets state so the demo is repeatable.
 rm -f /tmp/lab-complete
 echo "module-05 ready" >> /tmp/progress.log
 ----
@@ -98,7 +98,7 @@ echo "module-05 ready" >> /tmp/progress.log
 [source,bash]
 ----
 #!/bin/sh
-# Runs when student clicks Next. Non-zero exit code blocks progression.
+# Runs when you click Next. Non-zero exit code blocks progression.
 if [ -f /tmp/lab-complete ]; then
   echo "Validation passed" >> /tmp/progress.log
   exit 0
@@ -112,7 +112,7 @@ fi
 [source,bash]
 ----
 #!/bin/sh
-# Runs when student clicks Solve. Creates the file on their behalf.
+# Runs when you click Solve. Creates the file on your behalf.
 touch /tmp/lab-complete
 echo "Solved: created /tmp/lab-complete" >> /tmp/progress.log
 ----

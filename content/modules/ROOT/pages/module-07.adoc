@@ -1,7 +1,7 @@
-= Deploying your Lab
+= Deploying your lab
 
 When your lab is ready, you publish it by adding a `common.yaml` entry to the appropriate AgnosticV repository.
-BU developers have self-service merge access — no team PR approval required.
+BU (business unit) developers have self-service merge access, so you can merge your own pull request without approval from another team.
 
 == How it works
 
@@ -49,11 +49,11 @@ The `item:` value determines which AgnosticD configuration runs your lab:
 * `zt-ansiblebu/zt-ansible-bu-lab-developer-cnv` — Ansible BU labs
 ====
 
-== Development vs production refs
+== Git references for development and production
 
 [cols="1,2,2"]
 |===
-| Stage | `ref` value | Behaviour
+| Stage | `ref` value | Behavior
 
 | Development
 | `main` (or any branch name)
@@ -61,7 +61,7 @@ The `item:` value determines which AgnosticD configuration runs your lab:
 
 | Production
 | A git tag (e.g. `summit26`, `v1.0`)
-| Pinned to an exact commit. Students always get the same version regardless of future commits.
+| Pinned to an exact commit. Learners always get the same version, regardless of future commits.
 |===
 
 === Creating a production tag
@@ -104,4 +104,4 @@ zt-rhelbu-agnosticv/
         └── common.yaml
 ----
 
-Commit, open a PR, and merge it yourself — you have self-service merge access.
+Commit, open a pull request, and merge it yourself — you have self-service merge access.

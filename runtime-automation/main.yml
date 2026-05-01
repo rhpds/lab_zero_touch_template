@@ -8,7 +8,7 @@
 #   common_password — Lab user password
 #
 # Script naming convention: {{ module_stage }}-{{ ansible_host }}.sh
-#   e.g. when a user clicks Next in module-01 on host1:
+#   e.g. when you click Next in module-01 on host1:
 #        module_dir=module-01, module_stage=setup, ansible_host=host1
 #        → runs: runtime-automation/module-01/setup-host1.sh
 #

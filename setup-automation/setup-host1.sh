@@ -13,7 +13,7 @@
 # Env vars available in this script (injected by the zerotouch platform):
 #   BASTION_HOST      — SSH hostname used to connect to this VM
 #   BASTION_PORT      — SSH port (high NodePort, not 22)
-#   BASTION_USER      — SSH login user (typically 'rhel')
+#   BASTION_USER      — SSH user name (typically 'rhel')
 #   BASTION_PASSWORD  — SSH password (same as common_password)
 #   GUID              — Unique lab GUID (also available as {guid} in .adoc)
 #   common_password   — Lab user password

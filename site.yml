@@ -9,7 +9,7 @@ asciidoc:
   attributes:
     lab_name: "I'm the lab_name var"
     page-pagination: true
-    my_var: "foo - this is an asciidoc attribute from `site.yml`"
+    my_var: "foo - this is an AsciiDoc attribute from `site.yml`"
     # Deploy-time variables are injected into content/antora.yml by the platform
     # at container start (user_data.yml is merged into antora.yml automatically).
     # The stubs below are for LOCAL PREVIEW only — in a deployed lab these values

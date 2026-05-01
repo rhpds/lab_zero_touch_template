@@ -8,23 +8,23 @@ antora:
     - name: module-01  # Filename in content/modules/ROOT/pages/ without .adoc
       label: "Overview"
     - name: module-02
-      label: "Lab Infrastructure"
+      label: "Lab infrastructure"
     - name: module-03
-      label: "Setup Automation"
+      label: "Setup automation"
     - name: module-04
       label: "Configuring the UI"
     - name: module-05
-      label: "Runtime Automation"
+      label: "Runtime automation"
       solveButton: true  # Show a Solve button — validation-host1.sh blocks if task incomplete
     - name: module-06
-      label: "Writing Content"
+      label: "Writing content"
     - name: module-07
-      label: "Deploying your Lab"
+      label: "Deploying your lab"
 
 tabs:
   - name: ">_ terminal"
     type: "terminal"   # Auto-connects to bastion SSH via wetty.
                        # Available types: terminal, double-terminal
-  - name: "Asciidoc Doc"
+  - name: "AsciiDoc syntax"
     url: https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/
     external: true     # Opens in a new browser tab

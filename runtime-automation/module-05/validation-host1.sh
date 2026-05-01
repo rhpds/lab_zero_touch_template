@@ -1,6 +1,6 @@
 #!/bin/sh
-# validation-host1.sh — runs when the student clicks Next on module-05.
-# A non-zero exit code BLOCKS the student from advancing to the next module.
+# validation-host1.sh — runs when you click Next on module-05.
+# A non-zero exit code BLOCKS you from advancing to the next module.
 if [ -f /tmp/lab-complete ]; then
   echo "Validation passed" >> /tmp/progress.log
   exit 0

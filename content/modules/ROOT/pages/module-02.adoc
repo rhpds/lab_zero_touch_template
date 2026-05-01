@@ -1,9 +1,9 @@
-= Lab Infrastructure
+= Lab infrastructure
 
 The `config/` directory defines the infrastructure for your lab — what VMs exist, what networks they connect to, and what network traffic is allowed.
 Define this first. Everything else (scripts, content) is written to match it.
 
-== `instances.yaml` — Virtual machines
+== `instances.yaml`
 
 `instances.yaml` declares the VMs the platform will create using OpenShift Virtualization (CNV).
 
@@ -37,7 +37,7 @@ To see which images are available on the cluster:
 oc get pvc -n cnv-images
 ----
 
-=== AnsibleGroup — what AgnosticD configures
+=== AnsibleGroup
 
 The `AnsibleGroup` tag controls which AgnosticD roles run on each VM:
 
@@ -46,7 +46,7 @@ The `AnsibleGroup` tag controls which AgnosticD roles run on each VM:
 | Value | What AgnosticD does
 
 | `bastions`
-| Full configuration: Satellite registration, common packages, SSH user setup, NodePort SSH service.
+| Full configuration: Satellite registration, common packages, SSH user setup, and NodePort SSH service.
 The terminal tab in the lab UI connects to this VM automatically.
 
 | `nodes`
@@ -59,7 +59,7 @@ You own all setup via `setup-automation/` scripts or `userdata:` (cloud-init).
 Use when you need full control or a non-RHEL image.
 |===
 
-=== `packages:` — additional DNF packages
+=== `packages:`
 
 For `bastions` and `nodes` VMs, AgnosticD registers to Satellite automatically before installing these packages.
 List any additional packages to install at provisioning time:
@@ -72,7 +72,7 @@ List any additional packages to install at provisioning time:
       - name: jq
 ----
 
-=== Multiple identical VMs with `count:` and `INSTANCEGUID`
+=== Multiple identical VMs
 
 To create several VMs of the same type, use `count:` and the `INSTANCEGUID` placeholder.
 The platform replaces `INSTANCEGUID` with a unique numeric suffix for each VM:
@@ -92,7 +92,7 @@ The platform replaces `INSTANCEGUID` with a unique numeric suffix for each VM:
       - default
 ----
 
-=== `containers:` — in-pod containers
+=== `containers:`
 
 `containers:` defines containers that run inside the showroom pod itself (not as VMs).
 Used for custom tooling such as `code-server` or custom terminal images.
@@ -105,7 +105,7 @@ containers: []
 
 ---
 
-== `networks.yaml` — Network attachments
+== `networks.yaml`
 
 `networks.yaml` defines NetworkAttachmentDefinitions (NADs) for the lab namespace.
 
@@ -137,7 +137,7 @@ NetworkPolicy rules in `firewall.yaml` do *not* apply to secondary network traff
 
 ---
 
-== `firewall.yaml` — NetworkPolicy rules
+== `firewall.yaml`
 
 `firewall.yaml` defines Kubernetes NetworkPolicy rules for the lab namespace.
 

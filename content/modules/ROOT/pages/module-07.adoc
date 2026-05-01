@@ -18,6 +18,16 @@ The platform reads two parameters from your `common.yaml` to find and build your
 | The branch name or git tag the platform will check out
 |===
 
+== `lab-metadata.yml` and BU GitHub workflows
+
+Catalog metadata for **automated** BU workflows lives in your **lab** Git repository, not in AgnosticV.
+
+* Add a file named `lab-metadata.yml` at the **repository root** (the upstream **agnosticv** catalog repository publishes `lab-metadata.yaml.example` at repo root as a commented template — copy ideas from it and save as `lab-metadata.yml` in your lab).
+* The RHEL BU and Ansible BU **AgnosticV** repositories (`zt-rhelbu-agnosticv`, `zt-ansiblebu-agnosticv`, and similarly structured BUs) ship GitHub Actions that **clone your lab repo**, validate it, and read that metadata: for example `.github/workflows/create-or-update-entry.yaml` with `METADATA_FILE: lab-metadata.yml`, plus composite actions `.github/actions/validate-repository` and `.github/actions/extract-lab-config`.
+* Running those workflows (typically *Create or Update Catalog Entry* via `workflow_dispatch`) renders `common.yaml` (and related files) and opens a pull request **against the BU AgnosticV repo** — it does **not** replace hand-editing `common.yaml` when you prefer to manage entries yourself.
+
+Your learners still consume content from `ocp4_workload_showroom_content_git_repo` / `_ref`; `lab-metadata.yml` is how the BU pipeline describes the lab for catalog automation and optional zerotouch registration.
+
 == `common.yaml` example
 
 [source,yaml]

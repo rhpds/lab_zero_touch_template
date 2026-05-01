@@ -33,6 +33,8 @@ tabs:
 The default value in both files is `modules`.
 If you change one, change the other.
 This mismatch is the most common reason the lab UI shows a blank content panel.
+
+Deploy-time `user_data.yml` is merged into `content/antora.yml` for **`.asciidoc.attributes` only** (see the content container entrypoint in `showroom-images`) — it does **not** change `name:`. You still need matching `name:` / `antora.name` in the repo unless the catalog replaces the entire UI config.
 ====
 
 == `antora:` fields
@@ -42,7 +44,7 @@ This mismatch is the most common reason the lab UI shows a blank content panel.
 | Field | Description
 
 | `name`
-| The Antora component name. Must match `name:` in `content/antora.yml`.
+| The Antora component name. Must match `name:` in `content/antora.yml`. (Not overridden by deploy-time `user_data.yml` merge — only attributes are merged.)
 
 | `dir`
 | The subdirectory under the HTTP root where Antora built its HTML.

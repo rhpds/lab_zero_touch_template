@@ -46,12 +46,14 @@ The `AnsibleGroup` tag controls which AgnosticD roles run on each VM:
 | Value | What AgnosticD does
 
 | `bastions`
-| Full configuration: Satellite registration, common packages, SSH user setup, and NodePort SSH service.
-The terminal tab in the lab UI connects to this VM automatically.
+| Full configuration: Satellite registration, common packages, SSH user setup, and a **NodePort SSH Service** in the lab namespace so the VM is reachable from outside the pod network.
+Showroom **user_data** (SSH hints for the UI) is built from `groups['bastions'][0]` in the Developer Experience / zerotouch configs — use **exactly one** VM in the `bastions` group so that hostname, NodePort, and wetty auto-login stay unambiguous.
+The **default terminal** tab in nookbag auto-SSHs to that bastion (`wetty.ssh.sshHost` from user_data).
 
 | `nodes`
-| Same as `bastions` but no NodePort SSH service (not accessible from the lab UI terminal).
-Use for backend VMs that are only reachable VM-to-VM.
+| Same Satellite registration, packages, and SSH user setup as `bastions`, but that VM is **not** the target of the single `*-ssh` NodePort Service created in `infra-openshift-cnv-create-inventory` (only the discovered bastion host gets that Service).
+Use for backend VMs that are primarily reached **VM-to-VM** on the default network.
+The zerotouch Helm chart still passes **every** instance `name` into `wetty.ssh.sshOtherHosts`, so the showroom pod can run **additional wetty sidecars** per VM — separate from the default terminal tab (advanced; routing is `/wetty_<hostname>` in nginx).
 
 | `isolated`
 | No AgnosticD configuration at all.
@@ -74,12 +76,16 @@ List any additional packages to install at provisioning time:
 
 === Multiple identical VMs
 
-To create several VMs of the same type, use `count:` and the `INSTANCEGUID` placeholder.
-The platform replaces `INSTANCEGUID` with a unique numeric suffix for each VM:
+Two mechanisms work together:
+
+. **AgnosticV** (when your lab is wired through a BU `common.yaml`) performs a **string** `replace('INSTANCEGUID', guid)` on the raw `instances.yaml` **before** YAML parsing — `guid` is the **deployment** identifier (short alphanumeric), not a per-VM counter.
+. **`infra-openshift-cnv-resources`** duplicates an entry when `count:` is greater than `1`: each copy gets `_instance_name` = `name` + `1`, `2`, … **concatenated with no separator** (e.g. `node-` + count `3` yields `node-1`, `node-2`, `node-3` only if your `name` already ends where you expect; `node` + count becomes `node1`, `node2`).
+
+Cloud-init `userdata:` templates still replace the literal `INSTANCEGUID` token with the same **deployment `guid`** on every VM (not a unique suffix per clone).
 
 [source,yaml]
 ----
-  - name: "node-INSTANCEGUID"   # Becomes node-1, node-2, node-3
+  - name: "worker-INSTANCEGUID"   # After AgnosticV replace: worker-<guid>; with count: 3 → worker-<guid>1, worker-<guid>2, worker-<guid>3
     image: "rhel-9.5"
     memory: "2Gi"
     cores: 1
@@ -91,6 +97,12 @@ The platform replaces `INSTANCEGUID` with a unique numeric suffix for each VM:
     networks:
       - default
 ----
+
+[WARNING]
+====
+Pick `name:` carefully when using `count:` — suffixes glue directly to the string.
+Avoid ambiguous endings (e.g. a trailing hyphen you did not intend) and remember `INSTANCEGUID` is **not** a numeric VM index in AgnosticV.
+====
 
 === `containers:`
 

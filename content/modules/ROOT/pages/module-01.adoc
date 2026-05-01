@@ -32,8 +32,13 @@ Before writing any content, update these four values so the lab is yours:
 [IMPORTANT]
 ====
 `content/antora.yml` has a `name:` field (default: `modules`).
-This value must exactly match `antora.name` in `ui-config.yml`.
-Do not change `name:` in `antora.yml` unless you change both files together.
+`antora.name` in `ui-config.yml` must use the **same** value.
+
+Antora uses `name:` as the component id; nookbag uses `antora.name` to find built HTML.
+When the lab runs, `user_data.yml` is merged into `content/antora.yml` for **deploy-time AsciiDoc attributes only** — the component `name:` in the repo is **not** overwritten by that merge.
+Change both files together if you rename the component.
+
+Advanced: some catalog definitions allow a **full `ui-config.yml` override** from AgnosticV (bypassing the repo file for UI chrome only).
 ====
 
 == Directory structure

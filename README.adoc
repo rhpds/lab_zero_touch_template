@@ -44,8 +44,13 @@ After you create your repository from this template, update these four values be
 [IMPORTANT]
 ====
 `content/antora.yml` has a `name:` field (default: `modules`).
-This value must exactly match `antora.name` in `ui-config.yml`.
+`antora.name` in `ui-config.yml` must use the **same** value.
+
+Antora reads `name:` from `content/antora.yml`; the nookbag UI reads `antora.name` from `ui-config.yml`.
+At deploy time the platform merges `user_data.yml` into `content/antora.yml` for **AsciiDoc attributes only** (under `asciidoc.attributes`) — it does **not** replace the component `name:` key.
 Do not change `name:` in one file without changing the other.
+
+Advanced: a catalog item can pass a full `ui-config.yml` override (for example `showroom_content_ui_config` in some AgnosticV test configs) — only then can you centralize UI config outside the repo.
 ====
 
 == Directory structure
@@ -182,7 +187,7 @@ The in-lab modules follow the recommended build order for a new lab:
 
 | 07
 | Deploying your lab
-| AgnosticV `common.yaml`, self-service merge access, and Git references for development versus production
+| AgnosticV `common.yaml`, optional `lab-metadata.yml` + BU repo workflows for catalog automation, self-service merge, and Git refs for dev versus production
 |===
 
 == Development workflow
@@ -213,4 +218,4 @@ __meta__:
 ----
 
 BU (business unit) developers have self-service merge access, so you can merge your own pull request without approval from another team.
-See module-07 in the lab for the full procedure, including the pre-deployment checklist.
+See module-07 in the lab for the full procedure, including the pre-deployment checklist and how `lab-metadata.yml` in the lab repo ties into BU `zt-*-agnosticv` GitHub Actions.

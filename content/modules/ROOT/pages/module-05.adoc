@@ -23,8 +23,8 @@ Each UI action maps to a stage:
 | `validation-<vmname>.sh`
 
 | `solve`
-| When you click the *Solve* button (if `solveButton: true`)
-| `solve-<vmname>.sh`
+| When you click the *Solve* button — the button is shown only when `solveButton: true` on that module in `ui-config.yml`
+| `solve-<vmname>.sh` (optional — if missing, clicking *Solve* is a no-op)
 |===
 
 [IMPORTANT]
@@ -54,6 +54,7 @@ runtime-automation/
 ----
 
 If no script exists for a VM/stage combination, nothing runs — no error.
+For `solve`, you can set `solveButton: true` to expose the button even when you omit `solve-<vmname>.sh` (useful when the button is decorative or you add the script later).
 
 == Injected variables
 

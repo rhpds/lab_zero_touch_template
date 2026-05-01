@@ -44,6 +44,9 @@ jobs:
           path: .cache
           key: antora-bundle-v0.0.3
 
+      - name: Ensure pyyaml available for lab-build tab stripping
+        run: python3 -m pip install pyyaml --quiet
+
       - name: Build lab site
         run: bash utilities/lab-build
 

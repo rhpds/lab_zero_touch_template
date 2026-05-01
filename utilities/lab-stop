@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 #
+set -euo pipefail
 
 echo "Stopping serve process..."
 # Check if podman exists, otherwise use docker
@@ -7,5 +8,5 @@ CONTAINER_CMD="docker"
 if command -v podman &> /dev/null; then
     CONTAINER_CMD="podman"
 fi
-$CONTAINER_CMD kill showroom-httpd
+$CONTAINER_CMD rm -f showroom-httpd 2>/dev/null || true
 echo "Stopped serve process."

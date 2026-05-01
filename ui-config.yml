@@ -4,6 +4,7 @@ antora:
   name: modules        # Must match 'name:' in content/antora.yml
   dir: www             # Subdirectory within the HTTP root where Antora built HTML lives
                        # (matches site.yml output.dir: ./www/www relative to ./www/)
+  version: latest      # Must match version: in content/antora.yml — nookbag builds iframe src from this
   modules:
     - name: module-01  # Filename in content/modules/ROOT/pages/ without .adoc
       label: "Overview"
@@ -23,8 +24,8 @@ antora:
 
 tabs:
   - name: ">_ terminal"
-    type: "terminal"   # Auto-connects to bastion SSH via wetty.
-                       # Available types: terminal, double-terminal
+    type: "terminal"   # Auto-connects to bastion SSH via wetty (port 443, path /tty1).
+                       # Requires a deployed cluster — see module-04 for local preview notes.
   - name: "AsciiDoc syntax"
     url: https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/
     external: true     # Opens in a new browser tab

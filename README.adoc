@@ -125,8 +125,12 @@ Advanced: a catalog item can pass a full `ui-config.yml` override (for example `
 ----
 utilities/lab-build
 utilities/lab-serve
-# Browse to http://localhost:8080/index.html
+# Browse to http://localhost:8080/
 ----
+
+NOTE: `lab-build` handles all local-preview differences automatically — tab stripping, `zero-touch-config.yml` aliasing, and `view_switcher` injection.
+Open http://localhost:8080/ and the UI is ready.
+See `utilities/README.md` for details on what each script does.
 
 Iterative cycle: edit a file → `utilities/lab-build` → refresh the browser.
 

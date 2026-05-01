@@ -9,6 +9,7 @@
 antora:
   name: modules          # Must match 'name:' in content/antora.yml — see warning below
   dir: www               # Subdirectory where Antora built its HTML (matches site.yml output.dir)
+  version: latest       # Must match version: in content/antora.yml — nookbag iframe path uses this
   modules:
     - name: module-01    # Filename in content/modules/ROOT/pages/ without .adoc
       label: "Introduction"
@@ -50,6 +51,9 @@ Deploy-time `user_data.yml` is merged into `content/antora.yml` for **`.asciidoc
 | The subdirectory under the HTTP root where Antora built its HTML.
   For local preview: `www/` inside `./www/`. Do not change this value.
 
+| `version`
+| Antora component version (same as `version:` in `content/antora.yml`, often `latest`). Nookbag builds the handbook iframe path from `antora.dir`, `antora.name`, `version`, and the active module — if this is wrong or missing, the content panel shows errors or a blank page.
+
 | `modules[].name`
 | Filename of the page in `content/modules/ROOT/pages/` without the `.adoc` extension.
 
@@ -71,7 +75,7 @@ Deploy-time `user_data.yml` is merged into `content/antora.yml` for **`.asciidoc
 | The label shown on the tab.
 
 | `type`
-| Built-in tab type. `terminal` auto-connects to the bastion SSH via wetty.
+| Built-in tab type. `terminal` auto-connects to the bastion SSH via wetty (shorthand for `port: 443, path: /tty1`).
   `double-terminal` shows two side-by-side terminal panes.
 
 | `url`
@@ -83,8 +87,42 @@ Deploy-time `user_data.yml` is merged into `content/antora.yml` for **`.asciidoc
 
 [NOTE]
 ====
+Terminal and wetty tabs (`type: terminal`, `type: double-terminal`, `port: 443`) are *safe to keep* in `ui-config.yml`.
+
+At runtime on a deployed cluster, these tabs construct URLs like `https://<hostname>:443/tty1` that point to the showroom pod's wetty endpoint — they work fine there.
+Locally, that URL becomes `https://localhost:443` where nothing is listening, so Firefox reports *"There is a problem with this site"* because the embedded iframe triggers a TLS failure.
+
+`lab-build` strips all cluster-only tabs from `www/ui-config.yml` automatically before serving.
+You do not need to comment them out or maintain separate config files — the source `ui-config.yml` is never modified.
+====
+
+[NOTE]
+====
 Use `name:` for the tab display label. The `label:` field appears in `antora.modules[]` entries (for module navigation labels) and is distinct from the tab `name:`.
 ====
+
+== `view_switcher:` — content/tab layout control
+
+`view_switcher` adds a toolbar (Instructions / Split / Tabs) to the top right of the UI.
+
+[source,yaml]
+----
+view_switcher:
+  enabled: true
+  default_mode: split   # show content and tabs side by side on load
+----
+
+Available `default_mode` values:
+
+* `instructions` — content panel fills the full width; tab pane is hidden until the learner clicks *Split* or *Tabs*
+* `split` — content and tab pane side by side (default when `view_switcher` is absent)
+* `tabs` — tab pane fills the screen
+
+*You do not need to add `view_switcher` for local preview.*
+When `lab-build` strips cluster-only tabs, it also injects `view_switcher: {enabled: true, default_mode: instructions}` into `www/ui-config.yml` automatically.
+If your `ui-config.yml` already defines `view_switcher`, `lab-build` leaves it unchanged.
+
+Add `view_switcher` to `ui-config.yml` only when you want to control the default layout on a deployed cluster — for example, `default_mode: split` to open with content and terminal tabs visible side by side.
 
 == Adding a new module
 

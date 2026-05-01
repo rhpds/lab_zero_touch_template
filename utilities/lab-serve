@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 #
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+cd "${REPO_ROOT}"
 
 echo "Starting server process..."
 # Check if podman exists, otherwise use docker
@@ -10,6 +15,7 @@ fi
 # UBI9 httpd-24: non-root, no Docker Hub rate limits, Red Hat supported.
 # Serves on internal port 8080 mapped to localhost:8080.
 $CONTAINER_CMD run -d --rm --name showroom-httpd -p 8080:8080 \
-    -v "./www:/var/www/html/:z" \
+    -v "${REPO_ROOT}/www:/var/www/html:z" \
     registry.access.redhat.com/ubi9/httpd-24
-echo "Serving lab content on http://localhost:8080/index.html"
+echo "Serving lab content from ${REPO_ROOT}/www"
+echo "Open http://localhost:8080/ — nookbag loads ui-config.yml, assets, and the Antora handbook (ui-bundle) in the content iframe under /www/..."

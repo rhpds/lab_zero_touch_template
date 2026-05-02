@@ -15,11 +15,13 @@ antora:
     - name: module-04
       label: "Configuring the UI"
     - name: module-05
+      label: "Services and routes"
+    - name: module-06
       label: "Runtime automation"
       solveButton: true  # Show a Solve button — validation-host1.sh blocks if task incomplete
-    - name: module-06
-      label: "Writing content"
     - name: module-07
+      label: "Writing content"
+    - name: module-08
       label: "Deploying your lab"
 
 tabs:
@@ -29,3 +31,12 @@ tabs:
   - name: "AsciiDoc syntax"
     url: https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/
     external: true     # Opens in a new browser tab
+
+  # Module-conditional tab example (commented out — remove '#' to activate):
+  # - name: "AAP"
+  #   url: "https://control-${guid}.${domain}/"
+  #   external: false         # embedded iframe; route must delete X-Frame-Options
+  #   modules:
+  #     - module-03           # only show in module-03, module-04, module-05
+  #     - module-04           # (hidden in all other modules)
+  #     - module-05           # see module-05 for the full explanation

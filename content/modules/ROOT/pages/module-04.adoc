@@ -22,7 +22,6 @@ antora:
 tabs:
   - name: ">_ terminal"
     type: "terminal"     # Auto-connects to the bastion VM via SSH
-                         # Also available: double-terminal (side-by-side panes)
   - name: "Reference Docs"
     url: https://example.com
     external: true       # Opens in a new browser tab instead of an iframe
@@ -76,18 +75,25 @@ Deploy-time `user_data.yml` is merged into `content/antora.yml` for **`.asciidoc
 
 | `type`
 | Built-in tab type. `terminal` auto-connects to the bastion SSH via wetty (shorthand for `port: 443, path: /tty1`).
-  `double-terminal` shows two side-by-side terminal panes.
+  `double-terminal` and `secondary-terminal` are defined in nookbag but have no nginx locations in the zerotouch Helm chart — do not use them.
 
 | `url`
 | A URL to show in an embedded iframe, or open externally if `external: true`.
+  Use a relative path (e.g. `/wetty_control`) for same-origin showroom paths, or a full HTTPS URL for external service tabs.
 
 | `external`
 | When `true`, the URL opens in a new browser tab instead of an iframe.
+  When `false` (default), the URL is embedded as an iframe in the right pane.
+
+| `modules`
+| Optional list of module `name` values from `antora.modules[]`. When present and non-empty, the tab appears only when the active module's `name` is in the list.
+  An empty list (`modules: []`) is a no-op — the tab always shows. Omit the field entirely rather than leaving it empty.
+  See xref:module-05.adoc[Services, routes, and advanced tabs] for full behavior and examples.
 |===
 
 [NOTE]
 ====
-Terminal and wetty tabs (`type: terminal`, `type: double-terminal`, `port: 443`) are *safe to keep* in `ui-config.yml`.
+Terminal tabs (`type: terminal`, `port: 443`) are *safe to keep* in `ui-config.yml`.
 
 At runtime on a deployed cluster, these tabs construct URLs like `https://<hostname>:443/tty1` that point to the showroom pod's wetty endpoint — they work fine there.
 Locally, that URL becomes `https://localhost:443` where nothing is listening, so Firefox reports *"There is a problem with this site"* because the embedded iframe triggers a TLS failure.
@@ -132,15 +138,15 @@ Follow these four steps to extend the template with an additional module:
 +
 [source,bash]
 ----
-# Example: adding module-08
-touch content/modules/ROOT/pages/module-08.adoc
+# Example: adding module-09
+touch content/modules/ROOT/pages/module-09.adoc
 ----
 
 . *Add the entry to `ui-config.yml`*
 +
 [source,yaml]
 ----
-    - name: module-08
+    - name: module-09
       label: "My New Module"
 ----
 
@@ -148,7 +154,7 @@ touch content/modules/ROOT/pages/module-08.adoc
 +
 [source,bash]
 ----
-mkdir -p runtime-automation/module-08
+mkdir -p runtime-automation/module-09
 # Add setup-host1.sh, solve-host1.sh, and validation-host1.sh as needed
 ----
 
@@ -157,5 +163,5 @@ mkdir -p runtime-automation/module-08
 [source,yaml]
 ----
 # site.yml
-start_page: modules::module-08.adoc
+start_page: modules::module-09.adoc
 ----

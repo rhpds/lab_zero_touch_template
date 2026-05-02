@@ -1,139 +1,139 @@
-= Writing content
+= Runtime automation
 
-Lab content is written in AsciiDoc, a lightweight markup language that Antora builds into HTML.
-Each page corresponds to one file in `content/modules/ROOT/pages/`.
+`runtime-automation/` contains scripts that run during the lab *as you move through the modules*.
+Unlike `setup-automation/` (which runs once at provisioning), these scripts run on each UI action you take.
 
-== Variables
+This module is a *live demo* — the terminal tab is connected to your lab VM.
+Complete the task below, then click *Next* to see validation in action.
 
-=== Static variables (defined in `site.yml`)
+== The three stages
 
-Static attributes are defined under `asciidoc.attributes` in `site.yml` and are available on every page.
+Each UI action maps to a stage:
 
-[source,yaml]
-----
-# site.yml
-asciidoc:
-  attributes:
-    lab_name: "My Lab Name"
-    my_var: "some value"
-----
-
-Reference them in `.adoc` pages with `+{attribute-name}+`.
-For example: `{lab_name}` renders as: {lab_name}
-
-=== Deploy-time variables (injected automatically)
-
-When the lab is deployed, the platform merges `user_data.yml` into `content/antora.yml` at container start.
-These variables are then available on every page automatically:
-
-[cols="1,2,1"]
+[cols="1,2,2"]
 |===
-| Variable | Description | Example value
+| Stage | When it runs | Script name
 
-| `+{guid}+`
-| Unique lab GUID for this deployment
-| `abc12`
+| `setup`
+| When you *enter a module* or click *Next* (after validation passes)
+| `setup-<vmname>.sh`
 
-| `+{domain}+`
-| Lab domain name
-| `sandboxNNN.opentlc.com`
+| `validation`
+| When you click *Next* — runs before advancing
+| `validation-<vmname>.sh`
 
-| `+{bastion_public_hostname}+`
-| Full SSH hostname for the bastion VM
-| `bastion.abc12.sandboxNNN.opentlc.com`
+| `solve`
+| When you click the *Solve* button — the button is shown only when `solveButton: true` on that module in `ui-config.yml`
+| `solve-<vmname>.sh` (optional — if missing, clicking *Solve* is a no-op)
+|===
 
-| `+{common_password}+`
+[IMPORTANT]
+====
+A `validation-<vmname>.sh` that exits with a *non-zero exit code* blocks you from advancing.
+Use this to verify that the lab task has actually been completed.
+====
+
+== Script naming and directory structure
+
+Scripts live in `runtime-automation/<module-dir>/` and follow the pattern `<stage>-<vmname>.sh`:
+
+[source,shell]
+----
+runtime-automation/
+├── main.yml                            # Platform entry point — do not modify
+├── inventory                           # Platform-managed — do not modify
+├── module-01/
+│   ├── setup-host1.sh                  # Runs when you enter module-01
+│   ├── solve-host1.sh                  # Runs when you click Solve
+│   └── validation-host1.sh            # Runs when you click Next
+├── module-06/
+│   ├── setup-host1.sh                  # This module's demo scripts
+│   ├── solve-host1.sh
+│   └── validation-host1.sh
+└── ansible.cfg
+----
+
+If no script exists for a VM/stage combination, nothing runs — no error.
+For `solve`, you can set `solveButton: true` to expose the button even when you omit `solve-<vmname>.sh` (useful when the button is decorative or you add the script later).
+
+== Injected variables
+
+[cols="1,3"]
+|===
+| Variable | Description
+
+| `module_dir`
+| Directory name of the active module (e.g. `module-06`)
+
+| `module_stage`
+| The event: `setup`, `solve`, or `validation`
+
+| `ansible_host`
+| VM hostname — matches the VM name in `instances.yaml` (e.g. `host1`)
+
+| `GUID`
+| Lab GUID (same value as `+{guid}+` in `.adoc` pages)
+
+| `common_password`
 | Lab user password
-| `r3dh4t1!`
 |===
 
-The stub values in `content/antora.yml` provide fallback values for local preview, so that builds do not warn about unresolved attributes.
-At deploy time the platform overwrites them with real values.
+== This module's demo scripts
 
-.Source (what you write in `.adoc`):
-[source,asciidoc,subs="specialcharacters"]
-....
-SSH to your bastion:
+When you entered this module, `setup-host1.sh` ran and cleaned the demo state.
+When you click *Next*, `validation-host1.sh` will run and check for a file.
+If you click *Solve*, `solve-host1.sh` creates the file on your behalf.
+
+Here are all three scripts:
+
+.`runtime-automation/module-06/setup-host1.sh`
+[source,bash]
+----
+#!/bin/sh
+# Runs when you enter module-06. Resets state so the demo is repeatable.
+rm -f /tmp/lab-complete
+echo "module-06 ready" >> /tmp/progress.log
+----
+
+.`runtime-automation/module-06/validation-host1.sh`
+[source,bash]
+----
+#!/bin/sh
+# Runs when you click Next. Non-zero exit code blocks progression.
+if [ -f /tmp/lab-complete ]; then
+  echo "Validation passed" >> /tmp/progress.log
+  exit 0
+else
+  echo "Validation failed: /tmp/lab-complete not found" >> /tmp/progress.log
+  exit 1
+fi
+----
+
+.`runtime-automation/module-06/solve-host1.sh`
+[source,bash]
+----
+#!/bin/sh
+# Runs when you click Solve. Creates the file on your behalf.
+touch /tmp/lab-complete
+echo "Solved: created /tmp/lab-complete" >> /tmp/progress.log
+----
+
+== Your task
+
+In the terminal tab, run:
 
 [source,bash]
 ----
-ssh rhel@{bastion_public_hostname}
+touch /tmp/lab-complete
 ----
 
-Password: `{common_password}`
-....
+Then click *Next*. The validation script will find the file and allow you to advance.
 
-.Result (what a deployed lab shows after the platform substitutes real values):
-====
-SSH to your bastion:
-
-[source,bash]
-----
-ssh rhel@bastion.abc12.sandboxNNN.opentlc.com
-----
-
-Password: `r3dh4t1!`
-====
-
-== Admonitions
-
-AsciiDoc admonitions draw attention to important information.
-They render with a distinct icon and colored border in the nookbag UI.
-
-[source,asciidoc]
-----
-[NOTE]
-====
-This is a note. Use for supplementary information readers may find helpful.
-====
+If you skip this step and click *Next* directly, the validation will block you with an error.
+Click *Solve* to have the platform complete it for you instead.
 
 [TIP]
 ====
-This is a tip. Use for shortcuts or best practices.
+After writing your runtime scripts, test them with a full live deployment using the
+*Developer Experience CI* on https://catalog.demo.redhat.com.
 ====
-
-[IMPORTANT]
-====
-This is important. Use for information readers must not overlook.
-====
-
-[WARNING]
-====
-This is a warning. Use for actions that could cause data loss or breakage.
-====
-----
-
-They render as:
-
-[NOTE]
-====
-This is a note. Use for supplementary information readers may find helpful.
-====
-
-[TIP]
-====
-This is a tip. Use for shortcuts or best practices.
-====
-
-[IMPORTANT]
-====
-This is important. Use for information readers must not overlook.
-====
-
-[WARNING]
-====
-This is a warning. Use for actions that could cause data loss or breakage.
-====
-
-== Inserting images
-
-Place image files in `content/modules/ROOT/assets/images/` and reference them with the `image::` macro:
-
-[source,asciidoc]
-----
-image::example-image.png[Alt text, width=400]
-----
-
-This renders as:
-
-image::example-image.png[Example Image, width=400]

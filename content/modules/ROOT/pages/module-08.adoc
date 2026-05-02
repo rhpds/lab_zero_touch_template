@@ -1,0 +1,117 @@
+= Deploying your lab
+
+When your lab is ready, you publish it by adding a `common.yaml` entry to the appropriate AgnosticV repository.
+BU (business unit) developers have self-service merge access, so you can merge your own pull request without approval from another team.
+
+== How it works
+
+The platform reads two parameters from your `common.yaml` to find and build your lab:
+
+[cols="1,3"]
+|===
+| Parameter | Description
+
+| `ocp4_workload_showroom_content_git_repo`
+| The HTTPS URL of your lab's GitHub repository
+
+| `ocp4_workload_showroom_content_git_repo_ref`
+| The branch name or git tag the platform will check out
+|===
+
+== `lab-metadata.yml` and BU GitHub workflows
+
+Catalog metadata for **automated** BU workflows lives in your **lab** Git repository, not in AgnosticV.
+
+* Add a file named `lab-metadata.yml` at the **repository root** (the upstream **agnosticv** catalog repository publishes `lab-metadata.yaml.example` at repo root as a commented template — copy ideas from it and save as `lab-metadata.yml` in your lab).
+* The RHEL BU and Ansible BU **AgnosticV** repositories (`zt-rhelbu-agnosticv`, `zt-ansiblebu-agnosticv`, and similarly structured BUs) ship GitHub Actions that **clone your lab repo**, validate it, and read that metadata: for example `.github/workflows/create-or-update-entry.yaml` with `METADATA_FILE: lab-metadata.yml`, plus composite actions `.github/actions/validate-repository` and `.github/actions/extract-lab-config`.
+* Running those workflows (typically *Create or Update Catalog Entry* via `workflow_dispatch`) renders `common.yaml` (and related files) and opens a pull request **against the BU AgnosticV repo** — it does **not** replace hand-editing `common.yaml` when you prefer to manage entries yourself.
+
+Your learners still consume content from `ocp4_workload_showroom_content_git_repo` / `_ref`; `lab-metadata.yml` is how the BU pipeline describes the lab for catalog automation and optional zerotouch registration.
+
+== `common.yaml` example
+
+[source,yaml]
+----
+---
+__meta__:
+  deployer:
+    type: null
+  asset_uuid: "replace-with-your-uuid"          # Generate with: uuidgen
+  catalog:
+    display_name: "LB1234: My Lab Title"
+    labels:
+      Sales_Play: Cloud_Operating_System
+    workshop_user_mode: none
+  components:
+  - name: zt-lab-developer-cnv
+    display_name: zt lab developer cnv
+    item: zt-rhelbu/zt-rhel-bu-lab-developer-cnv   # Use zt-ansiblebu/... for Ansible BU labs
+    parameter_values:
+      ocp4_workload_showroom_content_git_repo: https://github.com/your-org/your-lab.git
+      ocp4_workload_showroom_content_git_repo_ref: main   # branch for dev; tag for production
+----
+
+[NOTE]
+====
+The `item:` value determines which AgnosticD configuration runs your lab:
+
+* `zt-rhelbu/zt-rhel-bu-lab-developer-cnv` — RHEL BU labs
+* `zt-ansiblebu/zt-ansible-bu-lab-developer-cnv` — Ansible BU labs
+====
+
+== Git references for development and production
+
+[cols="1,2,2"]
+|===
+| Stage | `ref` value | Behavior
+
+| Development
+| `main` (or any branch name)
+| Always pulls the latest commit on that branch. Fast iteration — push and re-deploy.
+
+| Production
+| A git tag (e.g. `summit26`, `v1.0`)
+| Pinned to an exact commit. Learners always get the same version, regardless of future commits.
+|===
+
+=== Creating a production tag
+
+[source,bash]
+----
+# Tag the current HEAD
+git tag summit26
+
+# Push the tag to GitHub
+git push origin summit26
+----
+
+Then set `ocp4_workload_showroom_content_git_repo_ref: summit26` in your `common.yaml`.
+
+== Pre-deployment checklist
+
+Before tagging for production, verify these items:
+
+* [ ] `site.yml` `title:` is updated to your lab's real title
+* [ ] `site.yml` `url:` points to your actual GitHub repo (not `showroom_template_zero`)
+* [ ] `site.yml` `start_page:` points to your first module
+* [ ] `content/antora.yml` `title:` is set
+* [ ] All `config/` files are correct (images available, memory/image_size use `Gi`)
+* [ ] `firewall.yaml` includes TCP 443 egress if your setup scripts need internet access
+* [ ] `ui-config.yml` module list matches your actual `.adoc` pages
+* [ ] Local preview (`utilities/lab-build` + `utilities/lab-serve`) builds without warnings
+* [ ] At least one Developer Experience CI test deployment succeeded
+
+== Where to add your `common.yaml`
+
+Add your file to the appropriate AgnosticV repository under the correct BU and event path.
+For example, for a RHEL BU summit lab:
+
+[source]
+----
+zt-rhelbu-agnosticv/
+└── summit-2026/
+    └── lb1234-my-lab/
+        └── common.yaml
+----
+
+Commit, open a pull request, and merge it yourself — you have self-service merge access.

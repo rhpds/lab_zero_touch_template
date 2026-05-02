@@ -1,139 +1,465 @@
-= Runtime automation
+= Services, routes, and advanced tabs
 
-`runtime-automation/` contains scripts that run during the lab *as you move through the modules*.
-Unlike `setup-automation/` (which runs once at provisioning), these scripts run on each UI action you take.
+You have VMs defined in `config/instances.yaml` and a basic terminal tab in `ui-config.yml`.
+This module covers the bridge between them: how to expose VM services as OpenShift Routes, how those routes connect to nookbag tabs, and how to control which tabs appear in which modules.
 
-This module is a *live demo* — the terminal tab is connected to your lab VM.
-Complete the task below, then click *Next* to see validation in action.
+== How the connection works
 
-== The three stages
+A tab URL in `ui-config.yml` reaches its destination through the zerotouch showroom pod:
 
-Each UI action maps to a stage:
+----
+ui-config.yml tab url
+  → nginx reverse-proxy (port 8080, single pod)
+      → either a wetty SSH sidecar  (for /wetty_* paths)
+      → or an OpenShift Service + Route  (for external HTTPS URLs)
+          → VM
+----
 
-[cols="1,2,2"]
-|===
-| Stage | When it runs | Script name
+The nginx configuration is managed by the zerotouch Helm chart.
+You do not configure nginx directly; you configure `instances.yaml` (which determines what sidecars exist) and `ui-config.yml` (which determines what the browser loads).
 
-| `setup`
-| When you *enter a module* or click *Next* (after validation passes)
-| `setup-<vmname>.sh`
+== Terminal tabs
 
-| `validation`
-| When you click *Next* — runs before advancing
-| `validation-<vmname>.sh`
+There are three distinct mechanisms for browser terminal access.
+Choose the right one for your use case.
 
-| `solve`
-| When you click the *Solve* button — the button is shown only when `solveButton: true` on that module in `ui-config.yml`
-| `solve-<vmname>.sh` (optional — if missing, clicking *Solve* is a no-op)
-|===
+=== Primary wetty: `type: terminal`
 
-[IMPORTANT]
+The simplest terminal tab connects to the bastion VM via SSH:
+
+[source,yaml]
+----
+tabs:
+  - name: ">_ Terminal"
+    type: terminal
+----
+
+`type: terminal` is a nookbag shorthand that constructs the URL `https://<showroom-host>:443/tty1`.
+Nginx routes `+/tty1+` to the primary wetty container (also accessible via `/wetty` — both paths share the same backend).
+The SSH destination comes from Helm values (`wetty.ssh.sshHost`, `wetty.ssh.sshUser`), not from the tab URL.
+The zerotouch Helm chart sets `wetty.ssh.autoSshToBastion: "true"` by default via AgnosticD, so the terminal connects to the bastion automatically on open.
+
+[NOTE]
 ====
-A `validation-<vmname>.sh` that exits with a *non-zero exit code* blocks you from advancing.
-Use this to verify that the lab task has actually been completed.
+`type: terminal` is preferred over `url: /wetty` for new labs.
+Nookbag constructs the full HTTPS URL from the current page hostname (cluster-portable), and `lab-build` strips it for local preview.
+A bare `url: /wetty` is not recognized by `lab-build` as a cluster-only tab and will not be stripped.
 ====
 
-== Script naming and directory structure
+=== Per-VM wetty sidecars: `url: /wetty_<hostname>`
 
-Scripts live in `runtime-automation/<module-dir>/` and follow the pattern `<stage>-<vmname>.sh`:
+To connect to a specific VM other than the bastion, reference its wetty sidecar by hostname:
 
-[source,shell]
+[source,yaml]
 ----
-runtime-automation/
-├── main.yml                            # Platform entry point — do not modify
-├── inventory                           # Platform-managed — do not modify
-├── module-01/
-│   ├── setup-host1.sh                  # Runs when you enter module-01
-│   ├── solve-host1.sh                  # Runs when you click Solve
-│   └── validation-host1.sh            # Runs when you click Next
-├── module-05/
-│   ├── setup-host1.sh                  # This module's demo scripts
-│   ├── solve-host1.sh
-│   └── validation-host1.sh
-└── ansible.cfg
+tabs:
+  - name: ">_ Terminal"
+    type: terminal           # bastion
+
+  - name: ">_ Control Node"
+    url: /wetty_control      # connects to VM named "control"
+
+  - name: ">_ Control (root)"
+    url: /wetty_control/ssh/root   # same VM, SSH as root
 ----
 
-If no script exists for a VM/stage combination, nothing runs — no error.
-For `solve`, you can set `solveButton: true` to expose the button even when you omit `solve-<vmname>.sh` (useful when the button is decorative or you add the script later).
+The zerotouch deployer creates one `wetty-<hostname>` sidecar container for every VM `name` in `instances.yaml`, and adds a matching nginx `location ^~ /wetty_<hostname>` block.
+You do not need to configure this in any Helm values — it happens automatically from `instances.yaml`.
 
-== Injected variables
+The `/ssh/<user>` path suffix selects the SSH user within the sidecar session.
 
-[cols="1,3"]
-|===
-| Variable | Description
+=== In-pod ttyd terminal: `url: /terminal_<name>`
 
-| `module_dir`
-| Directory name of the active module (e.g. `module-05`)
+The `terminal` sidecar (image `openshift-showroom-terminal-ocp`) runs a bash shell *inside the showroom pod* using ttyd — no SSH involved.
+It includes the OpenShift toolchain (`oc`, `helm`, `tkn`, `kn`, `virtctl`).
+Use it when learners need cluster CLI access rather than VM SSH access.
 
-| `module_stage`
-| The event: `setup`, `solve`, or `validation`
+Created via `instances[].consoles[]` in `instances.yaml`; tab URL is `url: /terminal_<name>`.
+This is an advanced use case not covered in detail here.
 
-| `ansible_host`
-| VM hostname — matches the VM name in `instances.yaml` (e.g. `host1`)
+[WARNING]
+====
+The nookbag types `secondary-terminal` and `double-terminal` are defined in nookbag's UI-CONFIG documentation but are *not backed by nginx locations* in the zerotouch Helm chart.
+Requests to `/tty2`, `/tty-top`, and `/tty-bottom` fall through to the Antora content server and return an HTML page, not a terminal.
+Do not use `type: secondary-terminal` or `type: double-terminal` in zerotouch labs.
+====
 
-| `GUID`
-| Lab GUID (same value as `+{guid}+` in `.adoc` pages)
+== OpenShift services and routes
 
-| `common_password`
-| Lab user password
-|===
+To expose a VM's web UI or HTTPS port to learners, define a `services:` and `routes:` block on the VM in `instances.yaml`.
+The zerotouch deployer creates the corresponding Kubernetes objects at provision time.
 
-== This module's demo scripts
+=== Service definition
 
-When you entered this module, `setup-host1.sh` ran and cleaned the demo state.
-When you click *Next*, `validation-host1.sh` will run and check for a file.
-If you click *Solve*, `solve-host1.sh` creates the file on your behalf.
-
-Here are all three scripts:
-
-.`runtime-automation/module-05/setup-host1.sh`
-[source,bash]
+[source,yaml]
 ----
-#!/bin/sh
-# Runs when you enter module-05. Resets state so the demo is repeatable.
-rm -f /tmp/lab-complete
-echo "module-05 ready" >> /tmp/progress.log
+instances:
+  - name: control
+    ...
+    services:
+      - name: control-https        # arbitrary name; referenced by routes[]
+        port: 443
+        targetPort: 443
 ----
 
-.`runtime-automation/module-05/validation-host1.sh`
-[source,bash]
-----
-#!/bin/sh
-# Runs when you click Next. Non-zero exit code blocks progression.
-if [ -f /tmp/lab-complete ]; then
-  echo "Validation passed" >> /tmp/progress.log
-  exit 0
-else
-  echo "Validation failed: /tmp/lab-complete not found" >> /tmp/progress.log
-  exit 1
-fi
-----
+The default `type` is `ClusterIP` — accessible only within the cluster; the Route provides external access.
+Use `type: LoadBalancer` only for non-HTTP TCP traffic (multiple raw ports, custom protocols).
 
-.`runtime-automation/module-05/solve-host1.sh`
-[source,bash]
-----
-#!/bin/sh
-# Runs when you click Solve. Creates the file on your behalf.
-touch /tmp/lab-complete
-echo "Solved: created /tmp/lab-complete" >> /tmp/progress.log
-----
+=== Route definition
 
-== Your task
-
-In the terminal tab, run:
-
-[source,bash]
+[source,yaml]
 ----
-touch /tmp/lab-complete
+    routes:
+      - name: control-https
+        service: control-https     # must match a services[] entry name
+        host: control              # becomes control-${guid}.${domain}
+        targetPort: 443
+        tls: true
+        tls_termination: reencrypt
+        tls_destinationCACertificate: |
+          -----BEGIN CERTIFICATE-----
+          <CA certificate PEM — see TLS section below>
+          -----END CERTIFICATE-----
+        httpHeaders:
+          actions:
+            response:
+              - name: X-Frame-Options
+                action:
+                  type: Delete
 ----
 
-Then click *Next*. The validation script will find the file and allow you to advance.
+The `host` value becomes `<host>-<guid>.<sandbox_openshift_apps_domain>`.
+In `ui-config.yml` tab URLs, reference the route as `https://control-${guid}.${domain}/`.
 
-If you skip this step and click *Next* directly, the validation will block you with an error.
-Click *Solve* to have the platform complete it for you instead.
+[NOTE]
+====
+`${guid}` and `${domain}` in `ui-config.yml` URLs are substituted by the `content` container at pod startup using `envsubst`.
+The variables come from `_showroom_user_data.environment_variables` in your AgnosticV `common.yaml`.
+They are *not* processed by nookbag, and they do *not* work in local preview.
+Use `{guid}` (no dollar sign) in `.adoc` content pages — that is an Antora attribute substituted at build time.
+====
+
+== TLS termination patterns
+
+=== Edge (backend is plain HTTP)
+
+The OpenShift router terminates TLS.
+Your VM service speaks plain HTTP.
+
+[source,yaml]
+----
+tls: true
+tls_termination: edge
+----
+
+Use for: Gitea (port 3000), VS Code (port 8080), custom web dashboards — any service you control that serves HTTP internally.
+
+=== Reencrypt (backend has baked-in TLS)
+
+The router terminates TLS and opens a new TLS session to the backend.
+Required when the VM service uses a self-signed certificate baked into the golden image.
+
+[source,yaml]
+----
+tls: true
+tls_termination: reencrypt
+tls_destinationCACertificate: |
+  -----BEGIN CERTIFICATE-----
+  MIIDxTCCAq2gAwIBAgIU...
+  -----END CERTIFICATE-----
+----
+
+The PEM value must be the *CA certificate* that signed the backend leaf — not the leaf certificate itself.
+See xref:module-05.adoc#aap-example[the AAP worked example] for how to extract the correct CA.
+
+Use for: Ansible Automation Platform/Controller, Satellite — services where the TLS cert is baked into the VM image.
+
+=== Passthrough (end-to-end TLS)
+
+The router passes the TLS stream unchanged to the backend.
+No `tls_destinationCACertificate` needed, but you cannot modify response headers (including `X-Frame-Options`).
+
+[source,yaml]
+----
+tls: true
+tls_termination: passthrough
+----
+
+Use for: services that require unbroken TLS (mutual TLS, client certificate auth).
+
+== Iframe tabs and `X-Frame-Options`
+
+To embed a service as an iframe in nookbag's split view, use `external: false` (or omit `external` — the default is false):
+
+[source,yaml]
+----
+tabs:
+  - name: "AAP"
+    url: "https://control-${guid}.${domain}/"
+    external: false    # embed in nookbag split view (default)
+----
+
+[source,yaml]
+----
+tabs:
+  - name: "AAP"
+    url: "https://control-${guid}.${domain}/"
+    external: true     # open in a new browser tab
+----
+
+Most web UIs send `X-Frame-Options: DENY` or `SAMEORIGIN`, which blocks iframing.
+Remove it on the route:
+
+[source,yaml]
+----
+    httpHeaders:
+      actions:
+        response:
+          - name: X-Frame-Options
+            action:
+              type: Delete
+----
 
 [TIP]
 ====
-After writing your runtime scripts, test them with a full live deployment using the
-*Developer Experience CI* on https://catalog.demo.redhat.com.
+If a service blocks iframing (many enterprise UIs do), use `external: true` to open it in a new browser tab instead.
+Learners can still reference it alongside the lab content.
+====
+
+[cols="1,2,2"]
+|===
+| Setting | Behavior | Use when
+
+| `external: false`
+| Embedded in nookbag right pane as iframe
+| Route has `X-Frame-Options` deleted; service allows framing
+
+| `external: true`
+| Opens URL in a new browser tab
+| Service blocks iframing (HashiCorp Vault UI, OCP console, Windows IIS)
+|===
+
+[[aap-example]]
+== Worked example: Ansible Automation Platform
+
+This example shows a complete setup for an AAP/Controller VM: `instances.yaml` definition with cloud-init, OpenShift service and route, the correct CA extraction procedure, and the matching `ui-config.yml` tab pair.
+
+=== 1. VM definition in `instances.yaml`
+
+[source,yaml]
+----
+virtualmachines:
+  - name: control
+    image: aap-2.6-ceh-latest   # AAP golden image slug
+    memory: 16Gi
+    cores: 4
+    image_size: 100Gi
+    tags:
+      AnsibleGroup: nodes        # "nodes" = isolated; AAP self-configures from the image
+    networks:
+      - default
+    userdata: |
+      #cloud-config
+      runcmd:
+        - hostnamectl set-hostname control-INSTANCEGUID
+        - echo "GUID=INSTANCEGUID" >> /etc/environment
+    services:
+      - name: control-https
+        port: 443
+        targetPort: 443
+    routes:
+      - name: control-https
+        service: control-https
+        host: control
+        targetPort: 443
+        tls: true
+        tls_termination: reencrypt
+        tls_destinationCACertificate: |
+          -----BEGIN CERTIFICATE-----
+          <replace with mesh-CA.crt from the control VM — see step 2>
+          -----END CERTIFICATE-----
+        httpHeaders:
+          actions:
+            response:
+              - name: X-Frame-Options
+                action:
+                  type: Delete
+----
+
+`AnsibleGroup: nodes` marks the VM as isolated.
+AgnosticD creates the VM but does not SSH into it — AAP self-configures from its golden image.
+
+`INSTANCEGUID` in `userdata` is replaced with the deployment GUID by AgnosticV before YAML parse.
+See xref:module-02.adoc[Lab infrastructure] for the `INSTANCEGUID` and `count` details.
+
+=== 2. Extract the correct CA PEM
+
+AAP golden images bake a unique CA at build time.
+You must extract `mesh-CA.crt` from a running VM on the *same image* you deploy.
+
+After provisioning a lab, SSH into the control VM and run:
+
+[source,bash]
+----
+cat /home/rhel/aap/receptor/etc/mesh-CA.crt
+----
+
+Verify it signs the Envoy gateway certificate:
+
+[source,bash]
+----
+openssl verify -CAfile /home/rhel/aap/receptor/etc/mesh-CA.crt \
+  /home/rhel/aap/gateway/etc/gateway.cert
+# Expect: gateway.cert: OK
+----
+
+Copy the full PEM block (including `-----BEGIN CERTIFICATE-----` and `-----END CERTIFICATE-----`) into `tls_destinationCACertificate` in `instances.yaml`.
+
+[IMPORTANT]
+====
+Each `aap-*` image bakes a *unique* CA.
+After every AAP golden image bump, re-extract `mesh-CA.crt` from a VM on the new image and refresh `instances.yaml`.
+A CA copied from an older image will not verify the new leaf certificate — you will get HTTP 503.
+====
+
+=== 3. Tab pair in `ui-config.yml`
+
+[source,yaml]
+----
+tabs:
+  - name: ">_ Terminal"
+    type: terminal             # bastion SSH (auto-stripped for local preview)
+
+  - name: ">_ Control"
+    url: /wetty_control        # SSH to the control VM
+    modules:
+      - module-03
+      - module-04
+      - module-05
+
+  - name: "AAP"
+    url: "https://control-${guid}.${domain}/"
+    external: false            # embedded iframe (X-Frame-Options deleted on route)
+    modules:
+      - module-03
+      - module-04
+      - module-05
+----
+
+The `modules:` list restricts each tab to specific modules.
+See xref:module-05.adoc#module-conditional-tabs[Module-conditional tabs] below.
+
+=== 4. Diagnosing HTTP 503 on the route
+
+[WARNING]
+====
+The most common AAP tab failure is HTTP 503 from the public `control-https` route while in-cluster HTTPS to the pod returns 200.
+This means `tls_destinationCACertificate` contains the *wrong PEM* — usually the Envoy leaf certificate instead of the image CA.
+
+Diagnose with:
+
+[source,bash]
+----
+oc get route control-https -n "<namespace>" \
+  -o jsonpath='{.spec.tls.destinationCACertificate}' \
+  | openssl x509 -noout -subject -issuer
+----
+
+If the `subject` is the leaf (e.g. `CN=aap.example.org`) rather than a CA, the router cannot validate the backend chain.
+Extract `mesh-CA.crt` (step 2 above) and replace the PEM.
+
+For a live hot-fix without redeploy:
+
+[source,bash]
+----
+oc get route control-https -n "<namespace>" -o yaml > route.yaml
+# Edit spec.tls.destinationCACertificate — replace with full mesh-CA.crt PEM block
+oc apply -f route.yaml
+----
+
+Full resolution steps and evidence patterns: link:{troubleshooting-url}/rhdp-zt-showroom-aap-reencrypt-destinationca-mismatch.html[Showroom AAP tab blank or HTTP 503 (reencrypt CA mismatch)].
+====
+
+[[module-conditional-tabs]]
+== Module-conditional tabs
+
+Add a `modules:` list to a tab to restrict its visibility to specific modules.
+Nookbag matches the value of `progress.current` against `antora.modules[].name` — the tab appears only when the active module name is in the list.
+
+[source,yaml]
+----
+tabs:
+  - name: ">_ Terminal"
+    type: terminal             # no modules: — always visible
+
+  - name: "AAP"
+    url: "https://control-${guid}.${domain}/"
+    external: false
+    modules:
+      - module-03              # must match antora.modules[].name exactly
+      - module-04
+      - module-05              # hidden in module-01, module-02, module-06, module-07, module-08
+----
+
+Behavioral rules:
+
+[cols="1,3"]
+|===
+| Condition | Result
+
+| `modules:` absent
+| Tab is always visible
+
+| `modules: [name-a, name-b]`
+| Tab visible only when the active module `name:` is in the list
+
+| `modules: []` (empty list)
+| Tab is always visible — the empty-list guard is never entered.
+  Omit `modules:` entirely rather than leaving an empty list.
+|===
+
+When the learner advances to a module where the currently selected tab is not in scope, nookbag automatically selects the first tab that is valid for the new module.
+
+When *all* tabs are filtered out for a module, the entire right pane disappears and the content panel fills the full width.
+This is intentional: use it for overview or theory modules where no terminal or web UI is relevant.
+
+[source,yaml]
+----
+antora:
+  modules:
+    - name: module-01
+      label: "Overview"          # no tabs visible → full-width content
+    - name: module-02
+      label: "Configuration"     # no tabs visible → full-width content
+    - name: module-03
+      label: "Hands-on: AAP"     # AAP + control wetty tabs appear
+    - name: module-04
+      label: "Advanced tasks"
+    - name: module-05
+      label: "Summary"
+
+tabs:
+  - name: ">_ Terminal"
+    type: terminal
+
+  - name: ">_ Control"
+    url: /wetty_control
+    modules:
+      - module-03
+      - module-04
+      - module-05
+
+  - name: "AAP"
+    url: "https://control-${guid}.${domain}/"
+    external: false
+    modules:
+      - module-03
+      - module-04
+      - module-05
+----
+
+[NOTE]
+====
+The `modules:` string values are the `name:` values from `antora.modules[]` — not the `label:` values.
+A mismatch produces a tab that silently never appears.
 ====
